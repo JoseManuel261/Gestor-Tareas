@@ -12,7 +12,15 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
+      <head>
+        {/* Evita el flash: aplica el tema guardado antes de hidratar. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{if(localStorage.getItem('theme')==='light'){document.documentElement.setAttribute('data-theme','light')}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body>{children}</body>
     </html>
   )

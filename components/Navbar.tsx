@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { LayoutDashboard, FolderKanban, Users, LogOut } from 'lucide-react'
 import NotificationBell from '@/components/NotificationBell'
+import ThemeToggle from '@/components/ThemeToggle'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -55,6 +56,7 @@ export default function Navbar({ username }: { username: string }) {
       </div>
 
       <div className="flex items-center gap-3">
+        <ThemeToggle />
         <NotificationBell />
         <span className="mono text-xs" style={{ color: 'var(--text-muted)' }}>@{username}</span>
         <button onClick={logout}

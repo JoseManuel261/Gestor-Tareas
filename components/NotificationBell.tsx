@@ -38,14 +38,20 @@ export default function NotificationBell() {
         .limit(20)
       setItems((data as Notification[]) || [])
 
-      channel = supabase
-        .channel('notifications-feed')
-        .on(
-          'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
-          payload => setItems(prev => [payload.new as Notification, ...prev])
-        )
-        .subscribe()
+      // Creamos el canal
+      const newChannel = supabase.channel('notifications-feed')
+
+      // Configuramos el listener ANTES de suscribirnos
+      newChannel.on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+        payload => setItems(prev => [payload.new as Notification, ...prev])
+      )
+
+      // Finalmente, nos suscribimos
+      newChannel.subscribe()
+
+      channel = newChannel
     }
 
     init()
@@ -63,7 +69,7 @@ export default function NotificationBell() {
     setOpen(false)
     if (!n.read) {
       setItems(prev => prev.map(i => (i.id === n.id ? { ...i, read: true } : i)))
-      supabase.from('notifications').update({ read: true }).eq('id', n.id).then(() => {})
+      supabase.from('notifications').update({ read: true }).eq('id', n.id).then(() => { })
     }
     if (n.link) router.push(n.link)
   }

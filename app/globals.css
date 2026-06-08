@@ -20,6 +20,27 @@
   --amber: #ffaa00;
 }
 
+/* Tema claro — sobreescribe los tokens; el acento lime se conserva (marca). */
+:root[data-theme="light"] {
+  --bg: #f6f6f4;
+  --surface: #ffffff;
+  --surface2: #eeeeea;
+  --border: #e3e3dd;
+  --border2: #d6d6cf;
+  --text: #16160f;
+  --text-muted: #5f5f57;
+  --text-dim: #9b9b92;
+  --accent: #c8f04a;
+  --accent-dim: rgba(120, 160, 20, 0.14);
+  --accent-hover: #b6e039;
+  --red: #d83a3a;
+  --blue: #2f6fe0;
+  --amber: #b07400;
+}
+
+:root { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+
 * {
   box-sizing: border-box;
   margin: 0;
