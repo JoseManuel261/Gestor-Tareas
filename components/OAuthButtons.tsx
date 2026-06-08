@@ -24,9 +24,12 @@ export default function OAuthButtons() {
   async function signIn(provider: Provider) {
     setLoading(provider)
     setError('')
+    const nextParam = new URLSearchParams(window.location.search).get('next')
+    const safeNext = nextParam && nextParam.startsWith('/') ? nextParam : null
+    const callback = `${window.location.origin}/auth/callback${safeNext ? `?next=${encodeURIComponent(safeNext)}` : ''}`
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: callback },
     })
     if (error) {
       setError(error.message)

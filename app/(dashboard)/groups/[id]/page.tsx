@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { Group, GroupMember, Project } from '@/lib/types'
-import { Plus, ArrowLeft, UserPlus, Trash2, Crown, User, FolderKanban, ArrowRight } from 'lucide-react'
+import { Plus, ArrowLeft, UserPlus, Trash2, Crown, User, FolderKanban, ArrowRight, Link2, Copy, Check } from 'lucide-react'
 import Modal from '@/components/Modal'
 import { FormField, inputCls, inputStyle, focusAccent, blurBorder } from '@/components/FormField'
 import Link from 'next/link'
@@ -20,10 +20,12 @@ export default function GroupDetailPage() {
   const [isOwner, setIsOwner] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showProjectModal, setShowProjectModal] = useState(false)
-  const [inviteUsername, setInviteUsername] = useState('')
   const [projectForm, setProjectForm] = useState({ name: '', description: '' })
   const [saving, setSaving] = useState(false)
-  const [inviteError, setInviteError] = useState('')
+  const [inviteLink, setInviteLink] = useState('')
+  const [linkLoading, setLinkLoading] = useState(false)
+  const [linkError, setLinkError] = useState('')
+  const [copied, setCopied] = useState(false)
 
   async function load() {
     try {
@@ -58,34 +60,52 @@ export default function GroupDetailPage() {
 
   useEffect(() => { load() }, [id])
 
-  async function inviteMember(e: React.FormEvent) {
-    e.preventDefault()
-    setSaving(true)
-    setInviteError('')
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('username', inviteUsername.trim())
-      .single()
+  async function openInviteModal() {
+    setShowInviteModal(true)
+    setInviteLink('')
+    setLinkError('')
+    setCopied(false)
+    setLinkLoading(true)
 
-    if (!profile) {
-      setInviteError('Usuario no encontrado')
-      setSaving(false)
-      return
+    // Reutiliza un enlace activo del grupo si ya existe; si no, crea uno.
+    const { data: existing } = await supabase
+      .from('invitations')
+      .select('token')
+      .eq('group_id', id)
+      .is('revoked_at', null)
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+      .limit(1)
+      .maybeSingle()
+
+    let token = (existing as any)?.token as string | undefined
+
+    if (!token) {
+      const { data, error } = await supabase
+        .from('invitations')
+        .insert({ group_id: id, invited_by: currentUser })
+        .select('token')
+        .single()
+      if (error) {
+        console.error('❌ Error generando enlace:', error)
+        setLinkError('No se pudo generar el enlace.')
+        setLinkLoading(false)
+        return
+      }
+      token = (data as any).token
     }
 
-    const exists = members.find(m => m.user_id === profile.id)
-    if (exists) {
-      setInviteError('Este usuario ya es miembro del grupo')
-      setSaving(false)
-      return
-    }
+    setInviteLink(`${window.location.origin}/invite/${token}`)
+    setLinkLoading(false)
+  }
 
-    await supabase.from('group_members').insert({ group_id: id, user_id: profile.id, role: 'member' })
-    setInviteUsername('')
-    setShowInviteModal(false)
-    setSaving(false)
-    load()
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(inviteLink)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setLinkError('No se pudo copiar. Copia el enlace manualmente.')
+    }
   }
 
   async function removeMember(memberId: string) {
@@ -152,7 +172,7 @@ export default function GroupDetailPage() {
               Miembros <span className="mono text-xs ml-1" style={{color: 'var(--text-dim)'}}>{members.length}</span>
             </h2>
             {isOwner && (
-              <button onClick={() => setShowInviteModal(true)}
+              <button onClick={openInviteModal}
                 className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all"
                 style={{color: 'var(--accent)', border: '1px solid var(--accent)', background: 'var(--accent-dim)'}}>
                 <UserPlus size={12} /> Invitar
@@ -228,23 +248,43 @@ export default function GroupDetailPage() {
       </div>
 
       {showInviteModal && (
-        <Modal title="Invitar miembro" onClose={() => { setShowInviteModal(false); setInviteError('') }}>
-          <form onSubmit={inviteMember} className="space-y-4">
-            <FormField label="Nombre de usuario">
-              <input type="text" value={inviteUsername}
-                onChange={e => { setInviteUsername(e.target.value); setInviteError('') }}
-                placeholder="username exacto del usuario" required className={inputCls} style={inputStyle}
-                onFocus={focusAccent} onBlur={blurBorder} />
-            </FormField>
-            {inviteError && (
-              <p className="text-xs" style={{color: 'var(--red)'}}>{inviteError}</p>
+        <Modal title="Invitar al grupo" onClose={() => setShowInviteModal(false)}>
+          <div className="space-y-4">
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              Comparte este enlace. Cualquiera con una cuenta podrá unirse al grupo.
+            </p>
+
+            {linkLoading ? (
+              <div className="flex items-center justify-center py-6">
+                <div className="w-5 h-5 rounded-full border-2 animate-spin"
+                  style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
+              </div>
+            ) : linkError ? (
+              <p className="text-sm px-4 py-3 rounded-lg border"
+                style={{ color: 'var(--red)', borderColor: 'rgba(255,68,68,0.2)', background: 'rgba(255,68,68,0.05)' }}>
+                {linkError}
+              </p>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 p-2 rounded-lg"
+                  style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+                  <Link2 size={14} className="shrink-0 ml-1" style={{ color: 'var(--text-dim)' }} />
+                  <input readOnly value={inviteLink}
+                    className="flex-1 bg-transparent text-xs outline-none min-w-0"
+                    style={{ color: 'var(--text)' }}
+                    onFocus={e => e.currentTarget.select()} />
+                  <button onClick={copyLink}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold shrink-0 transition-all"
+                    style={{ background: copied ? 'var(--accent-dim)' : 'var(--accent)', color: copied ? 'var(--accent)' : '#000' }}>
+                    {copied ? <><Check size={12} /> Copiado</> : <><Copy size={12} /> Copiar</>}
+                  </button>
+                </div>
+                <p className="mono text-xs" style={{ color: 'var(--text-dim)' }}>
+                  Reutilizable · caduca en 7 días
+                </p>
+              </>
             )}
-            <button type="submit" disabled={saving}
-              className="w-full py-2.5 rounded-lg font-semibold text-sm"
-              style={{background: saving ? 'var(--border2)' : 'var(--accent)', color: saving ? 'var(--text-muted)' : '#000'}}>
-              {saving ? 'Invitando...' : 'Invitar al grupo'}
-            </button>
-          </form>
+          </div>
         </Modal>
       )}
 

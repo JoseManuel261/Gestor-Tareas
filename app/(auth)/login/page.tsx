@@ -32,7 +32,8 @@ export default function LoginPage() {
     }
 
     if (data.session) {
-      window.location.href = '/dashboard'
+      const nextParam = new URLSearchParams(window.location.search).get('next')
+      window.location.href = nextParam && nextParam.startsWith('/') ? nextParam : '/dashboard'
     } else {
       setError('No se pudo iniciar sesión')
       setLoading(false)
