@@ -2,9 +2,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { Project, Task, Profile } from '@/lib/types'
+import { Project, Task, Profile, Comment } from '@/lib/types'
 import { statusColor, statusLabel, priorityColor, priorityLabel, formatDate } from '@/lib/utils'
-import { Plus, Trash2, ArrowLeft, User } from 'lucide-react'
+import { Plus, Trash2, ArrowLeft, User, MessageSquare, Send } from 'lucide-react'
 import Modal from '@/components/Modal'
 import { FormField, inputCls, inputStyle, focusAccent, blurBorder } from '@/components/FormField'
 
@@ -24,6 +24,9 @@ export default function ProjectDetailPage() {
   const [form, setForm] = useState({ title: '', description: '', priority: 'MEDIUM', assigned_to: '' })
   const [saving, setSaving] = useState(false)
   const [currentUser, setCurrentUser] = useState<string>('')
+  const [comments, setComments] = useState<Comment[]>([])
+  const [commentBody, setCommentBody] = useState('')
+  const [postingComment, setPostingComment] = useState(false)
 
   async function load() {
     try {
@@ -119,6 +122,35 @@ export default function ProjectDetailPage() {
     })
     setEditingTaskId(task.id)
     setShowModal(true)
+    loadComments(task.id)
+  }
+
+  async function loadComments(taskId: string) {
+    setComments([])
+    const { data } = await supabase
+      .from('comments')
+      .select('*, author:profiles!comments_author_id_fkey(*)')
+      .eq('task_id', taskId)
+      .order('created_at', { ascending: true })
+    setComments((data as Comment[]) || [])
+  }
+
+  async function addComment(e: React.FormEvent) {
+    e.preventDefault()
+    if (!commentBody.trim() || !editingTaskId) return
+    setPostingComment(true)
+    const { error } = await supabase.from('comments').insert({
+      task_id: editingTaskId,
+      author_id: currentUser,
+      body: commentBody.trim()
+    })
+    if (error) {
+      console.error('❌ Error al comentar:', error)
+    } else {
+      setCommentBody('')
+      loadComments(editingTaskId)
+    }
+    setPostingComment(false)
   }
 
   async function updateStatus(taskId: string, status: string) {
@@ -240,7 +272,7 @@ export default function ProjectDetailPage() {
       )}
 
       {showModal && (
-        <Modal title={editingTaskId ? "Editar tarea" : "Nueva tarea"} onClose={() => { setShowModal(false); setEditingTaskId(null); setForm({ title: '', description: '', priority: 'MEDIUM', assigned_to: '' }) }}>
+        <Modal title={editingTaskId ? "Editar tarea" : "Nueva tarea"} onClose={() => { setShowModal(false); setEditingTaskId(null); setForm({ title: '', description: '', priority: 'MEDIUM', assigned_to: '' }); setComments([]); setCommentBody('') }}>
           <form onSubmit={createTask} className="space-y-4">
             <FormField label="Título">
               <input type="text" value={form.title} onChange={e => setForm(p => ({...p, title: e.target.value}))}
@@ -274,6 +306,52 @@ export default function ProjectDetailPage() {
               {saving ? (editingTaskId ? 'Guardando...' : 'Creando...') : (editingTaskId ? 'Guardar cambios' : 'Crear tarea')}
             </button>
           </form>
+
+          {editingTaskId && (
+            <div className="mt-6 pt-5" style={{ borderTop: '1px solid var(--border)' }}>
+              <div className="flex items-center gap-2 mb-3">
+                <MessageSquare size={13} style={{ color: 'var(--text-muted)' }} />
+                <span className="text-xs uppercase tracking-wider font-medium" style={{ color: 'var(--text-muted)' }}>
+                  Bitácora ({comments.length})
+                </span>
+              </div>
+
+              <div className="space-y-3 max-h-44 overflow-y-auto mb-3">
+                {!comments.length ? (
+                  <p className="text-xs py-3 text-center" style={{ color: 'var(--text-dim)' }}>
+                    Sin comentarios todavía
+                  </p>
+                ) : (
+                  comments.map(c => (
+                    <div key={c.id} className="text-sm">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-xs font-medium" style={{ color: 'var(--text)' }}>
+                          @{(c.author as any)?.username || 'usuario'}
+                        </span>
+                        <span className="mono text-xs" style={{ color: 'var(--text-dim)' }}>
+                          {formatDate(c.created_at)}
+                        </span>
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--text-muted)' }}>{c.body}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <form onSubmit={addComment} className="flex items-center gap-2">
+                <input type="text" value={commentBody}
+                  onChange={e => setCommentBody(e.target.value)}
+                  placeholder="Escribe un comentario..."
+                  className={inputCls} style={inputStyle}
+                  onFocus={focusAccent} onBlur={blurBorder} />
+                <button type="submit" disabled={postingComment || !commentBody.trim()}
+                  className="p-2.5 rounded-lg shrink-0 transition-all"
+                  style={{ background: commentBody.trim() ? 'var(--accent)' : 'var(--border2)', color: commentBody.trim() ? '#000' : 'var(--text-muted)' }}>
+                  <Send size={14} />
+                </button>
+              </form>
+            </div>
+          )}
         </Modal>
       )}
     </div>

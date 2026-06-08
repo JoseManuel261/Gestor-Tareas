@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { Group, GroupMember, Project } from '@/lib/types'
-import { Plus, ArrowLeft, UserPlus, Trash2, Crown, User, FolderKanban, ArrowRight, Link2, Copy, Check } from 'lucide-react'
+import { Plus, ArrowLeft, UserPlus, Trash2, Crown, Shield, User, FolderKanban, ArrowRight, Link2, Copy, Check } from 'lucide-react'
 import Modal from '@/components/Modal'
 import { FormField, inputCls, inputStyle, focusAccent, blurBorder } from '@/components/FormField'
 import Link from 'next/link'
@@ -114,6 +114,15 @@ export default function GroupDetailPage() {
     load()
   }
 
+  async function changeRole(memberId: string, role: string) {
+    const { error } = await supabase.from('group_members').update({ role }).eq('id', memberId)
+    if (error) {
+      console.error('❌ Error cambiando rol:', error)
+      return
+    }
+    load()
+  }
+
   async function createGroupProject(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -147,6 +156,9 @@ export default function GroupDetailPage() {
     </div>
   )
 
+  // owner o admin: puede invitar, gestionar proyectos y expulsar members
+  const isAdmin = isOwner || members.some(m => m.user_id === currentUser && m.role === 'admin')
+
   return (
     <div className="space-y-6 animate-fade-up">
       <div className="flex items-center gap-4">
@@ -171,7 +183,7 @@ export default function GroupDetailPage() {
             <h2 className="font-semibold text-sm" style={{color: 'var(--text)'}}>
               Miembros <span className="mono text-xs ml-1" style={{color: 'var(--text-dim)'}}>{members.length}</span>
             </h2>
-            {isOwner && (
+            {isAdmin && (
               <button onClick={openInviteModal}
                 className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all"
                 style={{color: 'var(--accent)', border: '1px solid var(--accent)', background: 'var(--accent-dim)'}}>
@@ -180,23 +192,42 @@ export default function GroupDetailPage() {
             )}
           </div>
           <div className="space-y-2">
-            {members.map(member => (
+            {members.map(member => {
+              const canRemove =
+                member.user_id !== currentUser &&
+                member.role !== 'owner' &&
+                (isOwner || (isAdmin && member.role === 'member'))
+              const canChangeRole =
+                isOwner && member.role !== 'owner' && member.user_id !== currentUser
+              return (
               <div key={member.id} className="flex items-center gap-3 p-3 rounded-lg"
                 style={{background: 'var(--surface2)', border: '1px solid var(--border)'}}>
                 <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
-                  style={{background: member.role === 'owner' ? 'var(--accent-dim)' : 'var(--border)'}}>
+                  style={{background: member.role === 'member' ? 'var(--border)' : 'var(--accent-dim)'}}>
                   {member.role === 'owner'
                     ? <Crown size={12} style={{color: 'var(--accent)'}} />
-                    : <User size={12} style={{color: 'var(--text-muted)'}} />
+                    : member.role === 'admin'
+                      ? <Shield size={12} style={{color: 'var(--accent)'}} />
+                      : <User size={12} style={{color: 'var(--text-muted)'}} />
                   }
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate" style={{color: 'var(--text)'}}>
                     {member.profile?.username}
                   </p>
-                  <p className="mono text-xs" style={{color: 'var(--text-dim)'}}>{member.role}</p>
+                  {canChangeRole ? (
+                    <select value={member.role}
+                      onChange={e => changeRole(member.id, e.target.value)}
+                      className="mono text-xs outline-none cursor-pointer mt-0.5"
+                      style={{background: 'transparent', color: 'var(--text-dim)', border: 'none'}}>
+                      <option value="member" style={{background: 'var(--surface)', color: 'var(--text)'}}>member</option>
+                      <option value="admin" style={{background: 'var(--surface)', color: 'var(--text)'}}>admin</option>
+                    </select>
+                  ) : (
+                    <p className="mono text-xs" style={{color: 'var(--text-dim)'}}>{member.role}</p>
+                  )}
                 </div>
-                {isOwner && member.user_id !== currentUser && (
+                {canRemove && (
                   <button onClick={() => removeMember(member.id)}
                     className="p-1 rounded transition-all"
                     style={{color: 'var(--text-dim)'}}
@@ -206,7 +237,8 @@ export default function GroupDetailPage() {
                   </button>
                 )}
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
@@ -216,11 +248,13 @@ export default function GroupDetailPage() {
             <h2 className="font-semibold text-sm" style={{color: 'var(--text)'}}>
               Proyectos <span className="mono text-xs ml-1" style={{color: 'var(--text-dim)'}}>{projects.length}</span>
             </h2>
-            <button onClick={() => setShowProjectModal(true)}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all"
-              style={{color: 'var(--accent)', border: '1px solid var(--accent)', background: 'var(--accent-dim)'}}>
-              <Plus size={12} /> Proyecto
-            </button>
+            {isAdmin && (
+              <button onClick={() => setShowProjectModal(true)}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all"
+                style={{color: 'var(--accent)', border: '1px solid var(--accent)', background: 'var(--accent-dim)'}}>
+                <Plus size={12} /> Proyecto
+              </button>
+            )}
           </div>
           {!projects.length ? (
             <p className="text-sm text-center py-6" style={{color: 'var(--text-dim)'}}>Sin proyectos en este grupo</p>

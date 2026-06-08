@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { LayoutDashboard, FolderKanban, Users, LogOut } from 'lucide-react'
+import NotificationBell from '@/components/NotificationBell'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -54,6 +55,7 @@ export default function Navbar({ username }: { username: string }) {
       </div>
 
       <div className="flex items-center gap-3">
+        <NotificationBell />
         <span className="mono text-xs" style={{ color: 'var(--text-muted)' }}>@{username}</span>
         <button onClick={logout}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-all"
