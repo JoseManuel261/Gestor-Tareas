@@ -50,44 +50,44 @@ function BotCharacter({ open }: { open: boolean }) {
 
       <g className="tf-bob">
         {/* Antena */}
-        <line x1="24" y1="9" x2="24" y2="14" stroke="#c8f04a" strokeWidth="1.8" strokeLinecap="round"/>
-        <circle className="tf-dot" cx="24" cy="7" r="2.5" fill="#c8f04a"/>
+        <line x1="24" y1="9" x2="24" y2="14" stroke="#c8f04a" strokeWidth="1.8" strokeLinecap="round" />
+        <circle className="tf-dot" cx="24" cy="7" r="2.5" fill="#c8f04a" />
 
         {/* Cabeza */}
-        <rect x="12" y="14" width="24" height="18" rx="6" fill="#111111" stroke="#c8f04a" strokeWidth="1.6"/>
+        <rect x="12" y="14" width="24" height="18" rx="6" fill="#111111" stroke="#c8f04a" strokeWidth="1.6" />
 
         {/* Ojo izquierdo */}
         <g className="tf-eye-l">
-          <rect x="15.5" y="20" width="5.5" height="5.5" rx="1.5" fill="#c8f04a"/>
+          <rect x="15.5" y="20" width="5.5" height="5.5" rx="1.5" fill="#c8f04a" />
         </g>
 
         {/* Ojo derecho */}
         <g className="tf-eye-r">
-          <rect x="27" y="20" width="5.5" height="5.5" rx="1.5" fill="#c8f04a"/>
+          <rect x="27" y="20" width="5.5" height="5.5" rx="1.5" fill="#c8f04a" />
         </g>
 
         {/* Boca */}
         {open
-          ? <path d="M18 29.5 Q24 33.5 30 29.5" fill="none" stroke="#c8f04a" strokeWidth="1.4" strokeLinecap="round"/>
-          : <path d="M18 29 Q24 32.5 30 29" fill="none" stroke="#c8f04a" strokeWidth="1.4" strokeLinecap="round"/>
+          ? <path d="M18 29.5 Q24 33.5 30 29.5" fill="none" stroke="#c8f04a" strokeWidth="1.4" strokeLinecap="round" />
+          : <path d="M18 29 Q24 32.5 30 29" fill="none" stroke="#c8f04a" strokeWidth="1.4" strokeLinecap="round" />
         }
 
         {/* Cuello */}
-        <rect x="21" y="32" width="6" height="3" rx="1.2" fill="#1a1a1a" stroke="#2a2a2a" strokeWidth="0.6"/>
+        <rect x="21" y="32" width="6" height="3" rx="1.2" fill="#1a1a1a" stroke="#2a2a2a" strokeWidth="0.6" />
 
         {/* Cuerpo */}
-        <rect x="11" y="35" width="26" height="11" rx="5" fill="#111111" stroke="#c8f04a" strokeWidth="1.6"/>
+        <rect x="11" y="35" width="26" height="11" rx="5" fill="#111111" stroke="#c8f04a" strokeWidth="1.6" />
 
         {/* Chip en el pecho */}
-        <rect x="19" y="38.5" width="10" height="4" rx="1.2" fill="#1a1a1a" stroke="#c8f04a" strokeWidth="0.9"/>
-        <line x1="21.5" y1="40.5" x2="26.5" y2="40.5" stroke="#c8f04a" strokeWidth="0.7" strokeLinecap="round"/>
+        <rect x="19" y="38.5" width="10" height="4" rx="1.2" fill="#1a1a1a" stroke="#c8f04a" strokeWidth="0.9" />
+        <line x1="21.5" y1="40.5" x2="26.5" y2="40.5" stroke="#c8f04a" strokeWidth="0.7" strokeLinecap="round" />
 
         {/* Brazo izquierdo — quieto */}
-        <rect x="4" y="36" width="6" height="8" rx="3" fill="#111111" stroke="#c8f04a" strokeWidth="1.4"/>
+        <rect x="4" y="36" width="6" height="8" rx="3" fill="#111111" stroke="#c8f04a" strokeWidth="1.4" />
 
         {/* Brazo derecho — saluda */}
         <g className="tf-arm">
-          <rect x="38" y="34" width="6" height="8" rx="3" fill="#111111" stroke="#c8f04a" strokeWidth="1.4"/>
+          <rect x="38" y="34" width="6" height="8" rx="3" fill="#111111" stroke="#c8f04a" strokeWidth="1.4" />
         </g>
       </g>
     </svg>
@@ -236,11 +236,11 @@ export default function GlobalAI() {
                 style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}
                 onMouseEnter={e => {
                   (e.currentTarget as HTMLElement).style.borderColor = 'rgba(200,240,74,0.3)'
-                  ;(e.currentTarget as HTMLElement).style.color = 'var(--text)'
+                    ; (e.currentTarget as HTMLElement).style.color = 'var(--text)'
                 }}
                 onMouseLeave={e => {
                   (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
-                  ;(e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'
+                    ; (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'
                 }}>
                 <Icon size={12} style={{ color: 'var(--accent)', flexShrink: 0 }} />
                 {label}
@@ -272,29 +272,63 @@ export default function GlobalAI() {
       </div>
 
       {/* Botón flotante — muñequito animado */}
-      <button
-        onClick={() => setOpen(v => !v)}
-        aria-label="Abrir asistente IA"
-        className="fixed bottom-6 right-6 z-[55]"
-        style={{
-          background: 'none',
-          border: 'none',
-          padding: 0,
-          cursor: 'pointer',
-          filter: 'drop-shadow(0 0 10px rgba(200,240,74,0.3))',
-          transition: 'filter 0.3s ease, transform 0.2s ease',
-        }}
-        onMouseEnter={e => {
-          (e.currentTarget as HTMLElement).style.filter = 'drop-shadow(0 0 18px rgba(200,240,74,0.65))'
-          ;(e.currentTarget as HTMLElement).style.transform = 'scale(1.1)'
-        }}
-        onMouseLeave={e => {
-          (e.currentTarget as HTMLElement).style.filter = 'drop-shadow(0 0 10px rgba(200,240,74,0.3))'
-          ;(e.currentTarget as HTMLElement).style.transform = 'scale(1)'
-        }}
-      >
-        <BotCharacter open={open} />
-      </button>
+      <div className="fixed bottom-6 right-6 z-[55]">
+        {/* Globo de diálogo */}
+        {!open && (
+          <div
+            className="absolute bottom-14 right-0 mb-2 animate-fade-up"
+            style={{
+              background: 'var(--surface)',
+              border: '1px solid rgba(200,240,74,0.3)',
+              borderRadius: '12px 12px 2px 12px',
+              padding: '8px 12px',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+            }}
+          >
+            <p className="text-xs font-medium" style={{ color: 'var(--text)' }}>
+              Soy tu IA de guía
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              ¡Pregúntame lo que quieras!
+            </p>
+            {/* Triángulo apuntando al muñequito */}
+            <span style={{
+              position: 'absolute',
+              bottom: -6,
+              right: 14,
+              width: 0,
+              height: 0,
+              borderLeft: '6px solid transparent',
+              borderRight: '6px solid transparent',
+              borderTop: '6px solid rgba(200,240,74,0.3)',
+            }} />
+          </div>
+        )}
+
+        <button
+          onClick={() => setOpen(v => !v)}
+          aria-label="Abrir asistente IA"
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            filter: 'drop-shadow(0 0 10px rgba(200,240,74,0.3))',
+            transition: 'filter 0.3s ease, transform 0.2s ease',
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLElement).style.filter = 'drop-shadow(0 0 18px rgba(200,240,74,0.65))'
+              ; (e.currentTarget as HTMLElement).style.transform = 'scale(1.1)'
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLElement).style.filter = 'drop-shadow(0 0 10px rgba(200,240,74,0.3))'
+              ; (e.currentTarget as HTMLElement).style.transform = 'scale(1)'
+          }}
+        >
+          <BotCharacter open={open} />
+        </button>
+      </div>
     </>
   )
 }
