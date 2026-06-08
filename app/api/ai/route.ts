@@ -11,12 +11,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'GROQ_API_KEY no configurada' }, { status: 500 })
     }
 
-    // Construir el contexto del sistema con la info del proyecto
+    // Construir el contexto de forma segura
     const completedSummary = completedTasks?.length
-      ? completedTasks.map((t: any) =>
+      ? completedTasks.map((t: any) => 
           `• [${t.priority}] ${t.title}${t.description ? ': ' + t.description : ''}`
         ).join('\n')
       : 'Ninguna tarea completada aún.'
+
+    // Usamos JSON.stringify para asegurar que la tarea llegue limpia a la IA
+    const taskContext = currentTask ? JSON.stringify(currentTask, null, 2) : 'Ninguna tarea seleccionada.'
 
     const systemPrompt = `Eres un asistente de trabajo integrado en TaskFlow, una app de gestión de tareas en equipo.
 Tu rol es ayudar al usuario a entender y ejecutar su tarea específica, basándote en el contexto del proyecto.
@@ -28,11 +31,8 @@ DESCRIPCIÓN: ${projectDescription || 'Sin descripción.'}
 TAREAS YA COMPLETADAS POR EL EQUIPO:
 ${completedSummary}
 
-TAREA ACTUAL DEL USUARIO:
-Título: ${currentTask?.title || 'Sin título'}
-Descripción: ${currentTask?.description || 'Sin descripción.'}
-Prioridad: ${currentTask?.priority || 'MEDIUM'}
-Estado: ${currentTask?.status || 'PENDING'}
+TAREA ACTUAL DEL USUARIO (Datos estructurados):
+${taskContext}
 ---
 
 Reglas:
