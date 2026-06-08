@@ -12,6 +12,7 @@ export default function GroupsPage() {
   const [groups, setGroups] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', description: '' })
   const [saving, setSaving] = useState(false)
   const [userId, setUserId] = useState<string>('')
@@ -46,20 +47,74 @@ export default function GroupsPage() {
   async function createGroup(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data: group } = await supabase
-      .from('groups')
-      .insert({ ...form, owner_id: user.id })
-      .select()
-      .single()
-    if (group) {
-      await supabase.from('group_members').insert({ group_id: group.id, user_id: user.id, role: 'owner' })
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        console.error('❌ No authenticated user')
+        setSaving(false)
+        return
+      }
+      
+      if (editingGroupId) {
+        console.log('📝 Updating group:', editingGroupId)
+        const { error: updateError } = await supabase.from('groups').update({
+          name: form.name.trim(),
+          description: form.description.trim() || null
+        }).eq('id', editingGroupId)
+        if (updateError) {
+          console.error('❌ Update error:', updateError)
+          throw updateError
+        }
+        console.log('✅ Group updated successfully')
+      } else {
+        console.log('➕ Creating new group')
+        const { data: group, error: groupError } = await supabase
+          .from('groups')
+          .insert({ 
+            name: form.name.trim(),
+            description: form.description.trim() || null, 
+            owner_id: user.id 
+          })
+          .select()
+          .single()
+        if (groupError) {
+          console.error('❌ Insert error:', groupError)
+          throw groupError
+        }
+        
+        console.log('✅ Group created, adding owner as member')
+        if (group) {
+          const { error: memberError } = await supabase.from('group_members').insert({ 
+            group_id: group.id, 
+            user_id: user.id, 
+            role: 'owner' 
+          })
+          if (memberError) {
+            console.error('❌ Member insert error:', memberError)
+            throw memberError
+          }
+          console.log('✅ Owner added to group')
+        }
+      }
+      
+      setForm({ name: '', description: '' })
+      setEditingGroupId(null)
+      setShowModal(false)
+      load()
+    } catch (err) {
+      console.error('❌ Error saving group:', err)
+    } finally {
+      setSaving(false)
     }
-    setForm({ name: '', description: '' })
-    setShowModal(false)
-    setSaving(false)
-    load()
+  }
+
+  function openEditGroup(group: any) {
+    setForm({
+      name: group.name,
+      description: group.description || ''
+    })
+    setEditingGroupId(group.id)
+    setShowModal(true)
   }
 
   async function deleteGroup(id: string) {
@@ -111,7 +166,9 @@ export default function GroupsPage() {
                     <Users size={14} style={{color: 'var(--accent)'}} />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-sm" style={{color: 'var(--text)'}}>{group.name}</h3>
+                    <h3 className="font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => openEditGroup(group)}
+                      style={{color: 'var(--text)'}}>{group.name}</h3>
                     <span className="mono text-xs" style={{color: 'var(--text-dim)'}}>
                       {group.group_members?.[0]?.count || 0} miembro(s)
                     </span>
@@ -144,7 +201,7 @@ export default function GroupsPage() {
       )}
 
       {showModal && (
-        <Modal title="Nuevo grupo" onClose={() => setShowModal(false)}>
+        <Modal title={editingGroupId ? "Editar grupo" : "Nuevo grupo"} onClose={() => { setShowModal(false); setEditingGroupId(null); setForm({ name: '', description: '' }) }}>
           <form onSubmit={createGroup} className="space-y-4">
             <FormField label="Nombre del grupo">
               <input type="text" value={form.name} onChange={e => setForm(p => ({...p, name: e.target.value}))}
@@ -160,7 +217,7 @@ export default function GroupsPage() {
             <button type="submit" disabled={saving}
               className="w-full py-2.5 rounded-lg font-semibold text-sm"
               style={{background: saving ? 'var(--border2)' : 'var(--accent)', color: saving ? 'var(--text-muted)' : '#000'}}>
-              {saving ? 'Creando...' : 'Crear grupo'}
+              {saving ? (editingGroupId ? 'Guardando...' : 'Creando...') : (editingGroupId ? 'Guardar cambios' : 'Crear grupo')}
             </button>
           </form>
         </Modal>

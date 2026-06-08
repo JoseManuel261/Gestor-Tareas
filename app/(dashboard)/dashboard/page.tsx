@@ -30,7 +30,7 @@ export default function DashboardPage() {
         supabase.from('projects').select('*', { count: 'exact' }).eq('owner_id', uid),
         supabase.from('group_members').select('*', { count: 'exact' }).eq('user_id', uid),
         supabase.from('tasks').select('*, project:projects(name)').eq('assigned_to', uid).neq('status', 'COMPLETED').limit(5),
-        supabase.from('projects').select('*, tasks(count)').eq('owner_id', uid).order('created_at', { ascending: false }).limit(3),
+        supabase.from('projects').select('*').eq('owner_id', uid).order('created_at', { ascending: false }).limit(3),
         supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('assigned_to', uid).eq('status', 'COMPLETED'),
       ])
 

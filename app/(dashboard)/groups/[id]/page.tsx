@@ -26,12 +26,21 @@ export default function GroupDetailPage() {
   const [inviteError, setInviteError] = useState('')
 
   async function load() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) setCurrentUser(user.id)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) setCurrentUser(user.id)
 
-    const { data: g } = await supabase.from('groups').select('*').eq('id', id).single()
-    setGroup(g)
-    if (g && user) setIsOwner(g.owner_id === user.id)
+      const { data: g, error: groupError } = await supabase.from('groups').select('*').eq('id', id).single()
+      if (groupError) {
+        console.error('❌ Error loading group:', groupError)
+      } else {
+        console.log('✅ Group loaded:', g?.name)
+      }
+      setGroup(g)
+      if (g && user) setIsOwner(g.owner_id === user.id)
+    } catch (err) {
+      console.error('❌ Error in load:', err)
+    }
 
     const { data: m } = await supabase
       .from('group_members')
@@ -88,13 +97,28 @@ export default function GroupDetailPage() {
   async function createGroupProject(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    await supabase.from('projects').insert({ ...projectForm, owner_id: user.id, group_id: id })
-    setProjectForm({ name: '', description: '' })
-    setShowProjectModal(false)
-    setSaving(false)
-    load()
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        console.error('No authenticated user')
+        setSaving(false)
+        return
+      }
+      const { error } = await supabase.from('projects').insert({ 
+        name: projectForm.name.trim(),
+        description: projectForm.description.trim() || null, 
+        owner_id: user.id, 
+        group_id: id 
+      })
+      if (error) throw error
+      setProjectForm({ name: '', description: '' })
+      setShowProjectModal(false)
+      load()
+    } catch (err) {
+      console.error('Error creating group project:', err)
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (!group) return (

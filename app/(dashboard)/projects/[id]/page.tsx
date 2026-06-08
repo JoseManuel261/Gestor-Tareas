@@ -20,29 +20,48 @@ export default function ProjectDetailPage() {
   const [members, setMembers] = useState<Profile[]>([])
   const [filterStatus, setFilterStatus] = useState<string>('')
   const [showModal, setShowModal] = useState(false)
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
   const [form, setForm] = useState({ title: '', description: '', priority: 'MEDIUM', assigned_to: '' })
   const [saving, setSaving] = useState(false)
   const [currentUser, setCurrentUser] = useState<string>('')
 
   async function load() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) setCurrentUser(user.id)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) setCurrentUser(user.id)
 
-    const { data: proj } = await supabase.from('projects').select('*').eq('id', id).single()
-    setProject(proj)
+      const { data: proj, error: projError } = await supabase.from('projects').select('*').eq('id', id).single()
+      if (projError) {
+        console.error('❌ Error loading project:', projError)
+      } else {
+        console.log('✅ Project loaded:', proj?.name)
+      }
+      setProject(proj)
 
     if (proj?.group_id) {
-      const { data: gm } = await supabase
+      const { data: gm, error: gmError } = await supabase
         .from('group_members')
         .select('profile:profiles(*)')
         .eq('group_id', proj.group_id)
+      if (gmError) {
+        console.warn('⚠️  Error loading group members:', gmError)
+      }
       setMembers((gm?.map((m: any) => m.profile) || []) as Profile[])
+      console.log('✅ Members loaded:', gm?.length || 0)
     }
 
     let query = supabase.from('tasks').select('*, assignee:profiles!tasks_assigned_to_fkey(*)').eq('project_id', id)
     if (filterStatus) query = query.eq('status', filterStatus)
-    const { data: t } = await query.order('created_at', { ascending: false })
+    const { data: t, error: taskError } = await query.order('created_at', { ascending: false })
+    if (taskError) {
+      console.error('❌ Error loading tasks:', taskError)
+    } else {
+      console.log('✅ Tasks loaded:', t?.length || 0)
+    }
     setTasks(t || [])
+    } catch (err) {
+      console.error('❌ Error in load:', err)
+    }
   }
 
   useEffect(() => { load() }, [id, filterStatus])
@@ -50,17 +69,56 @@ export default function ProjectDetailPage() {
   async function createTask(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
-    await supabase.from('tasks').insert({
-      title: form.title,
-      description: form.description || null,
-      priority: form.priority,
-      project_id: id,
-      assigned_to: form.assigned_to || null
+    try {
+      if (editingTaskId) {
+        console.log('📝 Updating task:', editingTaskId)
+        const { error } = await supabase.from('tasks').update({
+          title: form.title.trim(),
+          description: form.description.trim() || null,
+          priority: form.priority,
+          assigned_to: form.assigned_to || null,
+          updated_at: new Date().toISOString()
+        }).eq('id', editingTaskId)
+        if (error) {
+          console.error('❌ Update error:', error)
+          throw error
+        }
+        console.log('✅ Task updated successfully')
+      } else {
+        console.log('➕ Creating new task for project:', id)
+        const { error } = await supabase.from('tasks').insert({
+          title: form.title.trim(),
+          description: form.description.trim() || null,
+          priority: form.priority,
+          project_id: id,
+          assigned_to: form.assigned_to || null
+        })
+        if (error) {
+          console.error('❌ Insert error:', error)
+          throw error
+        }
+        console.log('✅ Task created successfully')
+      }
+      setForm({ title: '', description: '', priority: 'MEDIUM', assigned_to: '' })
+      setEditingTaskId(null)
+      setShowModal(false)
+      load()
+    } catch (err) {
+      console.error('❌ Error saving task:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function openEditTask(task: Task) {
+    setForm({
+      title: task.title,
+      description: task.description || '',
+      priority: task.priority,
+      assigned_to: task.assigned_to || ''
     })
-    setForm({ title: '', description: '', priority: 'MEDIUM', assigned_to: '' })
-    setShowModal(false)
-    setSaving(false)
-    load()
+    setEditingTaskId(task.id)
+    setShowModal(true)
   }
 
   async function updateStatus(taskId: string, status: string) {
@@ -140,7 +198,8 @@ export default function ProjectDetailPage() {
               }}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <h3 className={`text-sm font-medium ${task.status === 'COMPLETED' ? 'line-through' : ''}`}
+                  <h3 className={`text-sm font-medium cursor-pointer transition-all hover:opacity-80 ${task.status === 'COMPLETED' ? 'line-through' : ''}`}
+                    onClick={() => openEditTask(task)}
                     style={{color: task.status === 'COMPLETED' ? 'var(--text-dim)' : 'var(--text)'}}>
                     {task.title}
                   </h3>
@@ -181,7 +240,7 @@ export default function ProjectDetailPage() {
       )}
 
       {showModal && (
-        <Modal title="Nueva tarea" onClose={() => setShowModal(false)}>
+        <Modal title={editingTaskId ? "Editar tarea" : "Nueva tarea"} onClose={() => { setShowModal(false); setEditingTaskId(null); setForm({ title: '', description: '', priority: 'MEDIUM', assigned_to: '' }) }}>
           <form onSubmit={createTask} className="space-y-4">
             <FormField label="Título">
               <input type="text" value={form.title} onChange={e => setForm(p => ({...p, title: e.target.value}))}
@@ -212,7 +271,7 @@ export default function ProjectDetailPage() {
             <button type="submit" disabled={saving}
               className="w-full py-2.5 rounded-lg font-semibold text-sm"
               style={{background: saving ? 'var(--border2)' : 'var(--accent)', color: saving ? 'var(--text-muted)' : '#000'}}>
-              {saving ? 'Creando...' : 'Crear tarea'}
+              {saving ? (editingTaskId ? 'Guardando...' : 'Creando...') : (editingTaskId ? 'Guardar cambios' : 'Crear tarea')}
             </button>
           </form>
         </Modal>
