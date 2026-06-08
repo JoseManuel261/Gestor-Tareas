@@ -276,7 +276,7 @@ export default function GlobalAI() {
         {/* Globo de diálogo */}
         {!open && (
           <div
-            className="absolute bottom-14 right-0 mb-2 animate-fade-up"
+            className="absolute bottom-16 right-0 mb-1 animate-fade-up"
             style={{
               background: 'var(--surface)',
               border: '1px solid rgba(200,240,74,0.3)',
