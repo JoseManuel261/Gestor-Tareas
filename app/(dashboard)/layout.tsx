@@ -30,7 +30,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div style={{background: 'var(--bg)', minHeight: '100vh'}}>
       <Navbar username={username} />
-      <main className="pt-14 px-6 max-w-6xl mx-auto py-8">
+      <main className="pt-20 px-6 max-w-6xl mx-auto py-8">
         {children}
       </main>
     </div>
