@@ -7,6 +7,7 @@ import { statusColor, statusLabel, priorityColor, priorityLabel, formatDate } fr
 import { Plus, Trash2, ArrowLeft, User, MessageSquare, Send } from 'lucide-react'
 import Modal from '@/components/Modal'
 import { FormField, inputCls, inputStyle, focusAccent, blurBorder } from '@/components/FormField'
+import AIAssistant from '@/components/AIAssistant'
 
 const STATUSES = ['PENDING', 'IN_PROGRESS', 'COMPLETED'] as const
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'] as const
@@ -21,6 +22,7 @@ export default function ProjectDetailPage() {
   const [filterStatus, setFilterStatus] = useState<string>('')
   const [showModal, setShowModal] = useState(false)
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [form, setForm] = useState({ title: '', description: '', priority: 'MEDIUM', assigned_to: '' })
   const [saving, setSaving] = useState(false)
   const [currentUser, setCurrentUser] = useState<string>('')
@@ -104,6 +106,7 @@ export default function ProjectDetailPage() {
       }
       setForm({ title: '', description: '', priority: 'MEDIUM', assigned_to: '' })
       setEditingTaskId(null)
+      setEditingTask(null)
       setShowModal(false)
       load()
     } catch (err) {
@@ -121,8 +124,18 @@ export default function ProjectDetailPage() {
       assigned_to: task.assigned_to || ''
     })
     setEditingTaskId(task.id)
+    setEditingTask(task)
     setShowModal(true)
     loadComments(task.id)
+  }
+
+  function closeModal() {
+    setShowModal(false)
+    setEditingTaskId(null)
+    setEditingTask(null)
+    setForm({ title: '', description: '', priority: 'MEDIUM', assigned_to: '' })
+    setComments([])
+    setCommentBody('')
   }
 
   async function loadComments(taskId: string) {
@@ -163,6 +176,9 @@ export default function ProjectDetailPage() {
     await supabase.from('tasks').delete().eq('id', taskId)
     load()
   }
+
+  // Tareas completadas del proyecto — contexto para la IA
+  const completedTasks = tasks.filter(t => t.status === 'COMPLETED')
 
   if (!project) return (
     <div className="flex items-center justify-center h-64">
@@ -272,7 +288,7 @@ export default function ProjectDetailPage() {
       )}
 
       {showModal && (
-        <Modal title={editingTaskId ? "Editar tarea" : "Nueva tarea"} onClose={() => { setShowModal(false); setEditingTaskId(null); setForm({ title: '', description: '', priority: 'MEDIUM', assigned_to: '' }); setComments([]); setCommentBody('') }}>
+        <Modal title={editingTaskId ? "Editar tarea" : "Nueva tarea"} onClose={closeModal}>
           <form onSubmit={createTask} className="space-y-4">
             <FormField label="Título">
               <input type="text" value={form.title} onChange={e => setForm(p => ({...p, title: e.target.value}))}
@@ -307,6 +323,7 @@ export default function ProjectDetailPage() {
             </button>
           </form>
 
+          {/* Bitácora de comentarios */}
           {editingTaskId && (
             <div className="mt-6 pt-5" style={{ borderTop: '1px solid var(--border)' }}>
               <div className="flex items-center gap-2 mb-3">
@@ -351,6 +368,15 @@ export default function ProjectDetailPage() {
                 </button>
               </form>
             </div>
+          )}
+
+          {/* Asistente IA — solo cuando se edita una tarea existente con contexto */}
+          {editingTaskId && editingTask && project && (
+            <AIAssistant
+              project={project}
+              currentTask={editingTask}
+              completedTasks={completedTasks}
+            />
           )}
         </Modal>
       )}
