@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import Navbar from '@/components/Navbar'
+import GlobalAI from '@/components/GlobalAI'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [username, setUsername] = useState<string>('')
@@ -33,6 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <main className="pt-20 px-6 max-w-6xl mx-auto py-8">
         {children}
       </main>
+      <GlobalAI />
     </div>
   )
 }
