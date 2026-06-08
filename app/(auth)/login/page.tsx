@@ -1,7 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
+import OAuthButtons from '@/components/OAuthButtons'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -9,6 +10,13 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('error')) {
+      setError('No se pudo completar el inicio de sesión externo. Inténtalo de nuevo.')
+    }
+  }, [])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -38,6 +46,14 @@ export default function LoginPage() {
           <span className="mono text-xs tracking-widest uppercase" style={{ color: 'var(--accent)' }}>TaskFlow</span>
           <h1 className="text-3xl font-bold mt-2" style={{ color: 'var(--text)' }}>Bienvenido de nuevo</h1>
           <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>Inicia sesión para continuar</p>
+        </div>
+
+        <OAuthButtons />
+
+        <div className="flex items-center gap-3 my-6">
+          <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+          <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-dim)' }}>o con tu email</span>
+          <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">

@@ -25,14 +25,20 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isDashboard = request.nextUrl.pathname.startsWith('/dashboard')
-  const isAuthPage = request.nextUrl.pathname === '/login'
+  const { pathname } = request.nextUrl
+  const protectedPrefixes = ['/dashboard', '/projects', '/groups']
+  const isProtected = protectedPrefixes.some(
+    p => pathname === p || pathname.startsWith(p + '/')
+  )
+  const isAuthPage = pathname === '/login' || pathname === '/register'
+  const isLanding = pathname === '/'
 
-  if (!user && isDashboard) {
+  if (!user && isProtected) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (user && isAuthPage) {
+  // Usuario con sesión: lo sacamos de la landing y de las pantallas de auth.
+  if (user && (isAuthPage || isLanding)) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
@@ -40,5 +46,12 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login'],
+  matcher: [
+    '/',
+    '/dashboard/:path*',
+    '/projects/:path*',
+    '/groups/:path*',
+    '/login',
+    '/register',
+  ],
 }

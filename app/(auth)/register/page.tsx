@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import OAuthButtons from '@/components/OAuthButtons'
 
 export default function RegisterPage() {
   const [form, setForm] = useState({ username: '', full_name: '', email: '', password: '' })
@@ -46,6 +47,14 @@ export default function RegisterPage() {
           <p className="mt-1 text-sm" style={{color: 'var(--text-muted)'}}>Empieza a gestionar tus proyectos</p>
         </div>
 
+        <OAuthButtons />
+
+        <div className="flex items-center gap-3 my-6">
+          <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+          <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-dim)' }}>o con tu email</span>
+          <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+        </div>
+
         <form onSubmit={handleRegister} className="space-y-4">
           {error && (
             <div className="text-sm px-4 py-3 rounded-lg border" style={{color: 'var(--red)', borderColor: 'rgba(255,68,68,0.2)', background: 'rgba(255,68,68,0.05)'}}>
@@ -54,8 +63,8 @@ export default function RegisterPage() {
           )}
 
           {[
-            { key: 'username', label: 'Usuario', placeholder: 'joseossa', type: 'text' },
-            { key: 'full_name', label: 'Nombre completo', placeholder: 'Jose Manuel Ossa', type: 'text' },
+            { key: 'username', label: 'Usuario', placeholder: 'tu_usuario', type: 'text' },
+            { key: 'full_name', label: 'Nombre completo', placeholder: 'Tu nombre', type: 'text' },
             { key: 'email', label: 'Email', placeholder: 'tu@email.com', type: 'email' },
             { key: 'password', label: 'Contraseña', placeholder: '••••••••', type: 'password' },
           ].map(field => (
