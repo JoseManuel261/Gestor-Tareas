@@ -26,7 +26,8 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
-  const protectedPrefixes = ['/dashboard', '/projects', '/groups', '/invite']
+  // Línea de protectedPrefixes — agrega '/profile'
+const protectedPrefixes = ['/dashboard', '/projects', '/groups', '/invite', '/profile']
   const isProtected = protectedPrefixes.some(
     p => pathname === p || pathname.startsWith(p + '/')
   )
@@ -54,6 +55,7 @@ export const config = {
     '/projects/:path*',
     '/groups/:path*',
     '/invite/:path*',
+    '/profile/:path*',   // ← agregar esto
     '/login',
     '/register',
   ],
