@@ -62,6 +62,7 @@ export type Task = {
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED'
   project_id: string
   assigned_to: string | null
+  due_date: string | null
   created_at: string
   updated_at: string
   assignee?: Profile
