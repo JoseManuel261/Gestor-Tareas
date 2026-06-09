@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { FolderKanban, Users, CheckSquare, ShieldCheck, Zap, ArrowRight } from 'lucide-react'
+import GlobalAI from '@/components/GlobalAI'
 
 const features = [
   {
@@ -36,12 +37,22 @@ export default function LandingPage() {
         <div className="flex items-center gap-2">
           <Link href="/login"
             className="px-3 py-1.5 rounded-md text-xs font-medium transition-all"
-            style={{ color: 'var(--text-muted)' }}>
+            style={{ color: 'var(--text-muted)', border: '1px solid transparent' }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLElement).style.color = 'var(--text)'
+              ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'
+              ;(e.currentTarget as HTMLElement).style.borderColor = 'transparent'
+            }}>
             Iniciar sesión
           </Link>
           <Link href="/register"
             className="px-4 py-1.5 rounded-md text-xs font-semibold transition-all"
-            style={{ background: 'var(--accent)', color: '#000' }}>
+            style={{ background: 'var(--accent)', color: '#000' }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'var(--accent)'}>
             Registrarse
           </Link>
         </div>
@@ -70,12 +81,28 @@ export default function LandingPage() {
           <div className="flex items-center justify-center gap-3 mt-9 animate-fade-up stagger-3">
             <Link href="/register"
               className="flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold transition-all"
-              style={{ background: 'var(--accent)', color: '#000' }}>
+              style={{ background: 'var(--accent)', color: '#000' }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'
+                ;(e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.background = 'var(--accent)'
+                ;(e.currentTarget as HTMLElement).style.transform = 'translateY(0)'
+              }}>
               Comenzar gratis <ArrowRight size={15} />
             </Link>
             <Link href="/login"
               className="px-6 py-3 rounded-lg text-sm font-medium transition-all"
-              style={{ color: 'var(--text)', border: '1px solid var(--border)' }}>
+              style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'
+                ;(e.currentTarget as HTMLElement).style.color = 'var(--accent)'
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
+                ;(e.currentTarget as HTMLElement).style.color = 'var(--text)'
+              }}>
               Ya tengo cuenta
             </Link>
           </div>
@@ -86,7 +113,15 @@ export default function LandingPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {features.map((f, i) => (
               <div key={f.title}
-                className={`glass rounded-xl p-6 animate-fade-up stagger-${Math.min(i + 1, 5)}`}>
+                className={`glass rounded-xl p-6 animate-fade-up stagger-${Math.min(i + 1, 5)} transition-all duration-200`}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'
+                  ;(e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
+                  ;(e.currentTarget as HTMLElement).style.transform = 'translateY(0)'
+                }}>
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-4"
                   style={{ background: 'var(--accent-dim)' }}>
                   <f.icon size={16} style={{ color: 'var(--accent)' }} />
@@ -112,6 +147,9 @@ export default function LandingPage() {
           </span>
         </div>
       </footer>
+
+      {/* IA global también en la landing */}
+      <GlobalAI />
     </div>
   )
 }

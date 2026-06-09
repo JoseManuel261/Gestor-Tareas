@@ -60,14 +60,26 @@ export default function GlobalAI() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  // Globo visible los primeros 5 segundos, luego se oculta solo
   const [showBubble, setShowBubble] = useState(true)
+  // Ocultarse cuando hay un modal abierto (especialmente en móvil)
+  const [modalOpen, setModalOpen] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const t = setTimeout(() => setShowBubble(false), 5000)
     return () => clearTimeout(t)
+  }, [])
+
+  useEffect(() => {
+    const onOpen = () => { setModalOpen(true); setOpen(false) }
+    const onClose = () => setModalOpen(false)
+    window.addEventListener('modal-open', onOpen)
+    window.addEventListener('modal-close', onClose)
+    return () => {
+      window.removeEventListener('modal-open', onOpen)
+      window.removeEventListener('modal-close', onClose)
+    }
   }, [])
 
   useEffect(() => {
@@ -234,8 +246,8 @@ export default function GlobalAI() {
         </div>
       </div>
 
-      {/* Botón flotante */}
-      <div className="fixed bottom-6 right-6 z-[55]">
+      {/* Botón flotante — oculto cuando hay modal abierto */}
+      <div className={`fixed bottom-6 right-6 z-[55] ${modalOpen ? 'hidden' : ''}`}>
         {/* Globo — desaparece a los 5s y al abrir el panel */}
         {showBubble && !open && (
           <div
