@@ -50,24 +50,19 @@ export default function GroupsPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        console.error('❌ No authenticated user')
         setSaving(false)
         return
       }
       
       if (editingGroupId) {
-        console.log('📝 Updating group:', editingGroupId)
         const { error: updateError } = await supabase.from('groups').update({
           name: form.name.trim(),
           description: form.description.trim() || null
         }).eq('id', editingGroupId)
         if (updateError) {
-          console.error('❌ Update error:', updateError)
           throw updateError
         }
-        console.log('✅ Group updated successfully')
       } else {
-        console.log('➕ Creating new group')
         const { data: group, error: groupError } = await supabase
           .from('groups')
           .insert({ 
@@ -78,11 +73,9 @@ export default function GroupsPage() {
           .select()
           .single()
         if (groupError) {
-          console.error('❌ Insert error:', groupError)
           throw groupError
         }
         
-        console.log('✅ Group created, adding owner as member')
         if (group) {
           const { error: memberError } = await supabase.from('group_members').insert({ 
             group_id: group.id, 
@@ -90,10 +83,8 @@ export default function GroupsPage() {
             role: 'owner' 
           })
           if (memberError) {
-            console.error('❌ Member insert error:', memberError)
             throw memberError
           }
-          console.log('✅ Owner added to group')
         }
       }
       
@@ -102,7 +93,6 @@ export default function GroupsPage() {
       setShowModal(false)
       load()
     } catch (err) {
-      console.error('❌ Error saving group:', err)
     } finally {
       setSaving(false)
     }

@@ -36,34 +36,27 @@ export default function ProjectsPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        console.error('❌ No authenticated user')
         setSaving(false)
         return
       }
 
       if (editingProjectId) {
-        console.log('📝 Updating project:', editingProjectId)
         const { error } = await supabase.from('projects').update({
           name: form.name.trim(),
           description: form.description.trim() || null
         }).eq('id', editingProjectId)
         if (error) {
-          console.error('❌ Update error:', error)
           throw error
         }
-        console.log('✅ Project updated successfully')
       } else {
-        console.log('➕ Creating new project')
         const { error } = await supabase.from('projects').insert({
           name: form.name.trim(),
           description: form.description.trim() || null,
           owner_id: user.id
         })
         if (error) {
-          console.error('❌ Insert error:', error)
           throw error
         }
-        console.log('✅ Project created successfully')
       }
 
       setForm({ name: '', description: '' })
@@ -71,7 +64,6 @@ export default function ProjectsPage() {
       setShowModal(false)
       load()
     } catch (err) {
-      console.error('❌ Error saving project:', err)
     } finally {
       setSaving(false)
     }
