@@ -62,7 +62,20 @@ export default function Navbar({ username }: { username: string }) {
         <div className="hidden md:flex items-center gap-3">
           <ThemeToggle />
           <NotificationBell />
-          <span className="mono text-xs" style={{ color: 'var(--text-muted)' }}>@{username}</span>
+          <Link href="/profile"
+            className="mono text-xs px-2 py-1 rounded-md transition-all"
+            style={{
+              color: pathname === '/profile' ? 'var(--accent)' : 'var(--text-muted)',
+              background: pathname === '/profile' ? 'var(--accent-dim)' : 'transparent',
+            }}
+            onMouseEnter={e => {
+              if (pathname !== '/profile') (e.currentTarget as HTMLElement).style.color = 'var(--text)'
+            }}
+            onMouseLeave={e => {
+              if (pathname !== '/profile') (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'
+            }}>
+            @{username}
+          </Link>
           <button onClick={logout}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-all"
             style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}
@@ -115,11 +128,14 @@ export default function Navbar({ username }: { username: string }) {
             )
           })}
 
-          {/* Separador */}
           <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0' }} />
 
           <div className="flex items-center justify-between px-3 py-2">
-            <span className="mono text-xs" style={{ color: 'var(--text-muted)' }}>@{username}</span>
+            <Link href="/profile" onClick={() => setMenuOpen(false)}
+              className="mono text-xs transition-all"
+              style={{ color: 'var(--text-muted)' }}>
+              @{username}
+            </Link>
             <button onClick={logout}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-all"
               style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}
