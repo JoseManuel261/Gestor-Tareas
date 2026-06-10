@@ -1,4 +1,3 @@
-'use client'
 import Link from 'next/link'
 import { FolderKanban, Users, CheckSquare, ShieldCheck, Zap, ArrowRight } from 'lucide-react'
 import GlobalAI from '@/components/GlobalAI'
