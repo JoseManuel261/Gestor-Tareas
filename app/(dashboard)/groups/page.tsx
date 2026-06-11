@@ -1,9 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
-import { Group } from '@/lib/types'
 import Link from 'next/link'
-import { Plus, Users, ArrowRight, Trash2 } from 'lucide-react'
+import { Plus, Users, ArrowRight, Trash2, Pencil } from 'lucide-react'
 import Modal from '@/components/Modal'
 import { FormField, inputCls, inputStyle, focusAccent, blurBorder } from '@/components/FormField'
 import { formatDate } from '@/lib/utils'
@@ -12,7 +11,7 @@ export default function GroupsPage() {
   const [groups, setGroups] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
-  const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
+  const [editingGroup, setEditingGroup] = useState<any | null>(null)
   const [form, setForm] = useState({ name: '', description: '' })
   const [saving, setSaving] = useState(false)
   const [userId, setUserId] = useState<string>('')
@@ -44,67 +43,61 @@ export default function GroupsPage() {
 
   useEffect(() => { load() }, [])
 
-  async function createGroup(e: React.FormEvent) {
+  function openNew() {
+    setEditingGroup(null)
+    setForm({ name: '', description: '' })
+    setShowModal(true)
+  }
+
+  function openEdit(group: any) {
+    setEditingGroup(group)
+    setForm({ name: group.name, description: group.description || '' })
+    setShowModal(true)
+  }
+
+  function closeModal() {
+    setShowModal(false)
+    setEditingGroup(null)
+    setForm({ name: '', description: '' })
+  }
+
+  async function saveGroup(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        setSaving(false)
-        return
-      }
-      
-      if (editingGroupId) {
-        const { error: updateError } = await supabase.from('groups').update({
+      if (!user) return
+
+      if (editingGroup) {
+        await supabase.from('groups').update({
           name: form.name.trim(),
           description: form.description.trim() || null
-        }).eq('id', editingGroupId)
-        if (updateError) {
-          throw updateError
-        }
+        }).eq('id', editingGroup.id)
       } else {
-        const { data: group, error: groupError } = await supabase
+        const { data: group } = await supabase
           .from('groups')
-          .insert({ 
+          .insert({
             name: form.name.trim(),
-            description: form.description.trim() || null, 
-            owner_id: user.id 
+            description: form.description.trim() || null,
+            owner_id: user.id
           })
           .select()
           .single()
-        if (groupError) {
-          throw groupError
-        }
-        
+
         if (group) {
-          const { error: memberError } = await supabase.from('group_members').insert({ 
-            group_id: group.id, 
-            user_id: user.id, 
-            role: 'owner' 
+          await supabase.from('group_members').insert({
+            group_id: group.id,
+            user_id: user.id,
+            role: 'owner'
           })
-          if (memberError) {
-            throw memberError
-          }
         }
       }
-      
-      setForm({ name: '', description: '' })
-      setEditingGroupId(null)
-      setShowModal(false)
+
+      closeModal()
       load()
-    } catch (err) {
     } finally {
       setSaving(false)
     }
-  }
-
-  function openEditGroup(group: any) {
-    setForm({
-      name: group.name,
-      description: group.description || ''
-    })
-    setEditingGroupId(group.id)
-    setShowModal(true)
   }
 
   async function deleteGroup(id: string) {
@@ -117,12 +110,14 @@ export default function GroupsPage() {
     <div className="space-y-6 animate-fade-up">
       <div className="flex items-center justify-between">
         <div>
-          <p className="mono text-xs tracking-widest uppercase" style={{color: 'var(--text-muted)'}}>Equipos</p>
-          <h1 className="text-2xl font-bold mt-0.5" style={{color: 'var(--text)'}}>Mis Grupos</h1>
+          <p className="mono text-xs tracking-widest uppercase" style={{ color: 'var(--text-muted)' }}>Equipos</p>
+          <h1 className="text-2xl font-bold mt-0.5" style={{ color: 'var(--text)' }}>Mis Grupos</h1>
         </div>
-        <button onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
-          style={{background: 'var(--accent)', color: '#000'}}>
+        <button onClick={openNew}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+          style={{ background: 'var(--accent)', color: '#000' }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'var(--accent)'}>
           <Plus size={15} /> Nuevo grupo
         </button>
       </div>
@@ -130,16 +125,22 @@ export default function GroupsPage() {
       {loading ? (
         <div className="grid md:grid-cols-2 gap-4">
           {[...Array(2)].map((_, i) => (
-            <div key={i} className="h-36 rounded-xl animate-pulse" style={{background: 'var(--surface)'}} />
+            <div key={i} className="h-36 rounded-xl animate-pulse" style={{ background: 'var(--surface)' }} />
           ))}
         </div>
       ) : !groups.length ? (
-        <div className="text-center py-20">
-          <Users size={32} className="mx-auto mb-3" style={{color: 'var(--text-dim)'}} />
-          <p className="text-sm mb-4" style={{color: 'var(--text-muted)'}}>No perteneces a ningún grupo aún</p>
-          <button onClick={() => setShowModal(true)}
+        <div className="text-center py-24">
+          <div className="w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-4"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <Users size={24} style={{ color: 'var(--text-dim)' }} />
+          </div>
+          <p className="text-base font-medium mb-1" style={{ color: 'var(--text)' }}>Sin grupos todavía</p>
+          <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
+            Crea un grupo e invita a tu equipo por link.
+          </p>
+          <button onClick={openNew}
             className="px-5 py-2.5 rounded-lg text-sm font-semibold"
-            style={{background: 'var(--accent)', color: '#000'}}>
+            style={{ background: 'var(--accent)', color: '#000' }}>
             Crear un grupo
           </button>
         </div>
@@ -147,41 +148,54 @@ export default function GroupsPage() {
         <div className="grid md:grid-cols-2 gap-4">
           {groups.map((group, i) => (
             <div key={group.id}
-              className={`rounded-xl p-5 transition-all animate-fade-up stagger-${Math.min(i+1,5)}`}
-              style={{background: 'var(--surface)', border: '1px solid var(--border)'}}>
+              className={`rounded-xl p-5 transition-all duration-200 animate-fade-up stagger-${Math.min(i + 1, 5)}`}
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--border2)'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'}>
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                    style={{background: 'var(--accent-dim)'}}>
-                    <Users size={14} style={{color: 'var(--accent)'}} />
+                    style={{ background: 'var(--accent-dim)' }}>
+                    <Users size={14} style={{ color: 'var(--accent)' }} />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity"
-                      onClick={() => openEditGroup(group)}
-                      style={{color: 'var(--text)'}}>{group.name}</h3>
-                    <span className="mono text-xs" style={{color: 'var(--text-dim)'}}>
+                    <h3 className="font-semibold text-sm" style={{ color: 'var(--text)' }}>{group.name}</h3>
+                    <span className="mono text-xs" style={{ color: 'var(--text-dim)' }}>
                       {group.group_members?.[0]?.count || 0} miembro(s)
                     </span>
                   </div>
                 </div>
                 {group.owner_id === userId && (
-                  <button onClick={() => deleteGroup(group.id)}
-                    className="p-1 rounded transition-all"
-                    style={{color: 'var(--text-dim)'}}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--red)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-dim)'}>
-                    <Trash2 size={13} />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={() => openEdit(group)}
+                      className="p-1.5 rounded transition-all"
+                      style={{ color: 'var(--text-dim)' }}
+                      title="Editar grupo"
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--accent)'}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-dim)'}>
+                      <Pencil size={12} />
+                    </button>
+                    <button onClick={() => deleteGroup(group.id)}
+                      className="p-1.5 rounded transition-all"
+                      style={{ color: 'var(--text-dim)' }}
+                      title="Eliminar grupo"
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--red)'}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-dim)'}>
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
                 )}
               </div>
               {group.description && (
-                <p className="text-xs mb-3 line-clamp-2" style={{color: 'var(--text-muted)'}}>{group.description}</p>
+                <p className="text-xs mb-3 line-clamp-2" style={{ color: 'var(--text-muted)' }}>{group.description}</p>
               )}
               <div className="flex items-center justify-between mt-3">
-                <span className="mono text-xs" style={{color: 'var(--text-dim)'}}>{formatDate(group.created_at)}</span>
+                <span className="mono text-xs" style={{ color: 'var(--text-dim)' }}>{formatDate(group.created_at)}</span>
                 <Link href={`/groups/${group.id}`}
-                  className="flex items-center gap-1 text-xs font-medium"
-                  style={{color: 'var(--accent)'}}>
+                  className="flex items-center gap-1 text-xs font-medium transition-all"
+                  style={{ color: 'var(--accent)' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '0.75'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '1'}>
                   Gestionar <ArrowRight size={12} />
                 </Link>
               </div>
@@ -191,23 +205,23 @@ export default function GroupsPage() {
       )}
 
       {showModal && (
-        <Modal title={editingGroupId ? "Editar grupo" : "Nuevo grupo"} onClose={() => { setShowModal(false); setEditingGroupId(null); setForm({ name: '', description: '' }) }}>
-          <form onSubmit={createGroup} className="space-y-4">
+        <Modal title={editingGroup ? 'Editar grupo' : 'Nuevo grupo'} onClose={closeModal}>
+          <form onSubmit={saveGroup} className="space-y-4">
             <FormField label="Nombre del grupo">
-              <input type="text" value={form.name} onChange={e => setForm(p => ({...p, name: e.target.value}))}
+              <input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                 placeholder="Mi equipo" required className={inputCls} style={inputStyle}
-                onFocus={focusAccent} onBlur={blurBorder} />
+                onFocus={focusAccent} onBlur={blurBorder} autoFocus />
             </FormField>
             <FormField label="Descripción (opcional)">
-              <textarea value={form.description} onChange={e => setForm(p => ({...p, description: e.target.value}))}
+              <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
                 placeholder="¿De qué trata este grupo?" rows={3}
                 className={inputCls + ' resize-none'} style={inputStyle}
                 onFocus={focusAccent as any} onBlur={blurBorder as any} />
             </FormField>
             <button type="submit" disabled={saving}
               className="w-full py-2.5 rounded-lg font-semibold text-sm"
-              style={{background: saving ? 'var(--border2)' : 'var(--accent)', color: saving ? 'var(--text-muted)' : '#000'}}>
-              {saving ? (editingGroupId ? 'Guardando...' : 'Creando...') : (editingGroupId ? 'Guardar cambios' : 'Crear grupo')}
+              style={{ background: saving ? 'var(--border2)' : 'var(--accent)', color: saving ? 'var(--text-muted)' : '#000' }}>
+              {saving ? (editingGroup ? 'Guardando...' : 'Creando...') : (editingGroup ? 'Guardar cambios' : 'Crear grupo')}
             </button>
           </form>
         </Modal>
