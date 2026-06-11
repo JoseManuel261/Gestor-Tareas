@@ -93,6 +93,7 @@ export default function ProfilePage() {
       setError(updateError.message.includes('unique') ? 'Ese username ya está en uso' : 'Error al guardar')
     } else {
       setSuccess('Perfil actualizado correctamente')
+      router.refresh()
       setTimeout(() => setSuccess(''), 3000)
     }
     setSaving(false)

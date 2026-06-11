@@ -41,8 +41,21 @@ export default function DashboardPage() {
   }, [])
 
   if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}/>
+    <div className="space-y-10 animate-fade-up">
+      <div>
+        <div className="section-line"/>
+        <div className="h-3 w-24 rounded mb-3 animate-pulse" style={{ background: 'var(--surface2)' }}/>
+        <div className="h-12 w-48 rounded animate-pulse" style={{ background: 'var(--surface2)' }}/>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-24 rounded-xl animate-pulse" style={{ background: 'var(--surface)' }}/>
+        ))}
+      </div>
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="h-64 rounded-xl animate-pulse" style={{ background: 'var(--surface)' }}/>
+        <div className="h-64 rounded-xl animate-pulse" style={{ background: 'var(--surface)' }}/>
+      </div>
     </div>
   )
 

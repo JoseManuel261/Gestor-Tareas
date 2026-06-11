@@ -20,6 +20,7 @@ export default function ProjectDetailPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [members, setMembers] = useState<Profile[]>([])
   const [filterStatus, setFilterStatus] = useState<string>('')
+  const [filterAssignee, setFilterAssignee] = useState<string>('')
   const [showModal, setShowModal] = useState(false)
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -47,11 +48,12 @@ export default function ProjectDetailPage() {
 
     let query = supabase.from('tasks').select('*, assignee:profiles!tasks_assigned_to_fkey(*)').eq('project_id', id)
     if (filterStatus) query = query.eq('status', filterStatus)
+    if (filterAssignee) query = query.eq('assigned_to', filterAssignee)
     const { data: t } = await query.order('created_at', { ascending: false })
     setTasks(t || [])
   }
 
-  useEffect(() => { load() }, [id, filterStatus])
+  useEffect(() => { load() }, [id, filterStatus, filterAssignee])
 
   async function saveTask(e: React.FormEvent) {
     e.preventDefault()
@@ -136,6 +138,7 @@ export default function ProjectDetailPage() {
   }
 
   const completedTasks = tasks.filter(t => t.status === 'COMPLETED')
+  const hasFilters = filterStatus || filterAssignee
 
   if (!project) return (
     <div className="flex items-center justify-center h-64">
@@ -159,37 +162,90 @@ export default function ProjectDetailPage() {
           {project.description && <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>{project.description}</p>}
         </div>
         <button onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
-          style={{ background: 'var(--accent)', color: '#000' }}>
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+          style={{ background: 'var(--accent)', color: '#000' }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'var(--accent)'}>
           <Plus size={14}/> Nueva tarea
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Filtrar:</span>
-        {['', ...STATUSES].map(s => (
-          <button key={s} onClick={() => setFilterStatus(s)}
-            className="mono text-xs px-3 py-1 rounded-full transition-all"
-            style={{
-              background: filterStatus === s ? 'var(--accent)' : 'var(--surface)',
-              color: filterStatus === s ? '#000' : 'var(--text-muted)',
-              border: '1px solid ' + (filterStatus === s ? 'var(--accent)' : 'var(--border)')
-            }}>
-            {s ? statusLabel[s] : 'Todos'}
-          </button>
-        ))}
-        <span className="mono text-xs ml-auto" style={{ color: 'var(--text-dim)' }}>
-          {tasks.length} tarea(s)
-        </span>
+      {/* Filtros */}
+      <div className="flex flex-col gap-3">
+        {/* Filtro por estado */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs w-16 shrink-0" style={{ color: 'var(--text-muted)' }}>Estado:</span>
+          {['', ...STATUSES].map(s => (
+            <button key={s} onClick={() => setFilterStatus(s)}
+              className="mono text-xs px-3 py-1 rounded-full transition-all"
+              style={{
+                background: filterStatus === s ? 'var(--accent)' : 'var(--surface)',
+                color: filterStatus === s ? '#000' : 'var(--text-muted)',
+                border: '1px solid ' + (filterStatus === s ? 'var(--accent)' : 'var(--border)')
+              }}>
+              {s ? statusLabel[s] : 'Todos'}
+            </button>
+          ))}
+        </div>
+
+        {/* Filtro por asignado — solo si hay miembros */}
+        {members.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs w-16 shrink-0" style={{ color: 'var(--text-muted)' }}>Asignado:</span>
+            <button onClick={() => setFilterAssignee('')}
+              className="mono text-xs px-3 py-1 rounded-full transition-all"
+              style={{
+                background: !filterAssignee ? 'var(--accent)' : 'var(--surface)',
+                color: !filterAssignee ? '#000' : 'var(--text-muted)',
+                border: '1px solid ' + (!filterAssignee ? 'var(--accent)' : 'var(--border)')
+              }}>
+              Todos
+            </button>
+            {members.map(m => (
+              <button key={m.id} onClick={() => setFilterAssignee(m.id)}
+                className="mono text-xs px-3 py-1 rounded-full transition-all flex items-center gap-1"
+                style={{
+                  background: filterAssignee === m.id ? 'var(--accent)' : 'var(--surface)',
+                  color: filterAssignee === m.id ? '#000' : 'var(--text-muted)',
+                  border: '1px solid ' + (filterAssignee === m.id ? 'var(--accent)' : 'var(--border)')
+                }}>
+                <User size={10}/> {m.username}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          {hasFilters && (
+            <button onClick={() => { setFilterStatus(''); setFilterAssignee('') }}
+              className="mono text-xs transition-all"
+              style={{ color: 'var(--text-dim)' }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--red)'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-dim)'}>
+              × Limpiar filtros
+            </button>
+          )}
+          <span className="mono text-xs ml-auto" style={{ color: 'var(--text-dim)' }}>
+            {tasks.length} tarea(s)
+          </span>
+        </div>
       </div>
 
       {/* Tasks */}
       {!tasks.length ? (
         <div className="text-center py-16">
           <p className="text-sm" style={{ color: 'var(--text-dim)' }}>
-            {filterStatus ? 'No hay tareas con este estado' : 'No hay tareas aún'}
+            {hasFilters ? 'No hay tareas con estos filtros' : 'No hay tareas aún'}
           </p>
+          {hasFilters && (
+            <button onClick={() => { setFilterStatus(''); setFilterAssignee('') }}
+              className="mt-3 text-xs transition-all"
+              style={{ color: 'var(--text-muted)' }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--accent)'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'}>
+              Limpiar filtros
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-2">
@@ -214,7 +270,6 @@ export default function ProjectDetailPage() {
                     <span className={`mono text-xs px-2 py-0.5 rounded ${priorityColor[task.priority]}`}>
                       {priorityLabel[task.priority]}
                     </span>
-                    {/* Indicador de fecha límite */}
                     {due && task.status !== 'COMPLETED' && (
                       <span className={`mono text-xs px-2 py-0.5 rounded flex items-center gap-1 ${dueDateColor[due.status]}`}>
                         <Calendar size={10}/>
@@ -261,7 +316,7 @@ export default function ProjectDetailPage() {
             <FormField label="Título">
               <input type="text" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
                 placeholder="Título de la tarea" required className={inputCls} style={inputStyle}
-                onFocus={focusAccent} onBlur={blurBorder}/>
+                onFocus={focusAccent} onBlur={blurBorder} autoFocus/>
             </FormField>
             <FormField label="Descripción (opcional)">
               <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
@@ -298,7 +353,6 @@ export default function ProjectDetailPage() {
             </button>
           </form>
 
-          {/* Bitácora */}
           {editingTaskId && (
             <div className="mt-6 pt-5" style={{ borderTop: '1px solid var(--border)' }}>
               <div className="flex items-center gap-2 mb-3">
