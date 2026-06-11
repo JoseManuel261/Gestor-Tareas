@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'TaskFlow — Gestión de equipos',
+  title: 'Strata — Gestión de equipos',
   description: 'Gestor de tareas para equipos pequeños',
 }
 

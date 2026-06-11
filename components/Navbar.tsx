@@ -37,7 +37,7 @@ export default function Navbar({ username }: { username: string }) {
         {/* Logo */}
         <Link href="/dashboard" className="font-display text-xl leading-none shrink-0"
           style={{ color: 'var(--text)' }}>
-          Taskflow.
+          Strata.
         </Link>
 
         {/* Nav links — solo desktop */}

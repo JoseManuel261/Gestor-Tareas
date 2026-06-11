@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     // Usamos JSON.stringify para asegurar que la tarea llegue limpia a la IA
     const taskContext = currentTask ? JSON.stringify(currentTask, null, 2) : 'Ninguna tarea seleccionada.'
 
-    const systemPrompt = `Eres un asistente de trabajo integrado en TaskFlow, una app de gestión de tareas en equipo.
+    const systemPrompt = `Eres un asistente de trabajo integrado en Strata, una app de gestión de tareas en equipo.
 Tu rol es ayudar al usuario a entender y ejecutar su tarea específica, basándote en el contexto del proyecto.
 
 ---

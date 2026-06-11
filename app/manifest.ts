@@ -5,8 +5,8 @@ import type { MetadataRoute } from 'next'
 // añaden más adelante sin tocar la lógica de la app.
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'TaskFlow — Gestión de equipos',
-    short_name: 'TaskFlow',
+    name: 'Strata — Gestión de equipos',
+    short_name: 'Strata',
     description: 'Gestor de tareas colaborativo para equipos pequeños',
     start_url: '/',
     display: 'standalone',

@@ -10,11 +10,11 @@ interface Message {
 
 const QUICK_PROMPTS = [
   { icon: TrendingUp, label: 'Tendencias 2025', prompt: '¿Qué tendencias globales de tecnología o negocio podrían inspirar proyectos interesantes este año?' },
-  { icon: Lightbulb, label: 'Ideas de proyectos', prompt: 'Dame 5 ideas de proyectos originales que podría gestionar en TaskFlow, con nombre y descripción breve.' },
-  { icon: Info, label: '¿Qué es TaskFlow?', prompt: 'Explícame qué es TaskFlow y cómo puedo sacarle el máximo provecho.' },
+  { icon: Lightbulb, label: 'Ideas de proyectos', prompt: 'Dame 5 ideas de proyectos originales que podría gestionar en Strata, con nombre y descripción breve.' },
+  { icon: Info, label: '¿Qué es Strata?', prompt: 'Explícame qué es Strata y cómo puedo sacarle el máximo provecho.' },
 ]
 
-const WELCOME = 'Hola. Soy el asistente general de TaskFlow.\n\nPuedo ayudarte con ideas de proyectos, contarte sobre tendencias globales o explicarte cómo sacar provecho de la app. ¿Por dónde empezamos?'
+const WELCOME = 'Hola. Soy el asistente general de Strata.\n\nPuedo ayudarte con ideas de proyectos, contarte sobre tendencias globales o explicarte cómo sacar provecho de la app. ¿Por dónde empezamos?'
 
 function BotCharacter({ open }: { open: boolean }) {
   return (
@@ -60,26 +60,14 @@ export default function GlobalAI() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  // Globo visible los primeros 5 segundos, luego se oculta solo
   const [showBubble, setShowBubble] = useState(true)
-  // Ocultarse cuando hay un modal abierto (especialmente en móvil)
-  const [modalOpen, setModalOpen] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const t = setTimeout(() => setShowBubble(false), 5000)
     return () => clearTimeout(t)
-  }, [])
-
-  useEffect(() => {
-    const onOpen = () => { setModalOpen(true); setOpen(false) }
-    const onClose = () => setModalOpen(false)
-    window.addEventListener('modal-open', onOpen)
-    window.addEventListener('modal-close', onClose)
-    return () => {
-      window.removeEventListener('modal-open', onOpen)
-      window.removeEventListener('modal-close', onClose)
-    }
   }, [])
 
   useEffect(() => {
@@ -149,7 +137,7 @@ export default function GlobalAI() {
               style={{ background: 'var(--accent-dim)' }}>
               <span style={{ color: 'var(--accent)', fontSize: 13, lineHeight: 1 }}>✦</span>
             </span>
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Asistente TaskFlow</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Asistente Strata</span>
             <span className="mono px-1.5 py-0.5 rounded"
               style={{ background: 'var(--accent-dim)', color: 'var(--accent)', fontSize: '0.6rem' }}>
               GENERAL
@@ -246,8 +234,8 @@ export default function GlobalAI() {
         </div>
       </div>
 
-      {/* Botón flotante — oculto cuando hay modal abierto */}
-      <div className={`fixed bottom-6 right-6 z-[55] ${modalOpen ? 'hidden' : ''}`}>
+      {/* Botón flotante */}
+      <div className="fixed bottom-6 right-6 z-[55]">
         {/* Globo — desaparece a los 5s y al abrir el panel */}
         {showBubble && !open && (
           <div

@@ -1,155 +1,232 @@
 'use client'
 import Link from 'next/link'
-import { FolderKanban, Users, CheckSquare, ShieldCheck, Zap, ArrowRight } from 'lucide-react'
 import GlobalAI from '@/components/GlobalAI'
-
-const features = [
-  {
-    icon: FolderKanban,
-    title: 'Proyectos organizados',
-    desc: 'Agrupa tareas por proyecto y mantén todo tu trabajo en un único espacio claro.',
-  },
-  {
-    icon: Users,
-    title: 'Equipos colaborativos',
-    desc: 'Invita a tu equipo, asigna tareas y trabaja en conjunto en tiempo real.',
-  },
-  {
-    icon: CheckSquare,
-    title: 'Flujos de trabajo',
-    desc: 'Sigue cada tarea de pendiente a completada con estados y prioridades.',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Seguro por diseño',
-    desc: 'Cada equipo ve solo lo suyo. Acceso protegido en el servidor de extremo a extremo.',
-  },
-]
 
 export default function LandingPage() {
   return (
-    <div style={{ background: 'var(--bg)', minHeight: '100vh' }}>
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-6 justify-between"
-        style={{ background: 'rgba(10,10,10,0.8)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)' }}>
-        <span className="font-display text-xl leading-none" style={{ color: 'var(--text)' }}>
-          Taskflow.
+    <div style={{ background: 'var(--bg)', minHeight: '100vh', position: 'relative' }}>
+
+      {/* Nav — minimalista, sin iconos */}
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
+        height: '3.5rem',
+        display: 'flex', alignItems: 'center',
+        padding: '0 2rem',
+        justifyContent: 'space-between',
+        borderBottom: '1px solid var(--border)',
+        background: 'rgba(10,10,10,0.85)',
+        backdropFilter: 'blur(10px)',
+      }}>
+        <span style={{
+          fontFamily: 'Syne, sans-serif',
+          fontWeight: 800,
+          fontSize: '1rem',
+          letterSpacing: '-0.01em',
+          color: 'var(--text)',
+        }}>
+          Strata
+          <span style={{ color: 'var(--accent)' }}>.</span>
         </span>
-        <div className="flex items-center gap-2">
-          <Link href="/login"
-            className="px-3 py-1.5 rounded-md text-xs font-medium transition-all"
-            style={{ color: 'var(--text-muted)', border: '1px solid transparent' }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.color = 'var(--text)'
-              ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'
-              ;(e.currentTarget as HTMLElement).style.borderColor = 'transparent'
-            }}>
-            Iniciar sesión
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Link href="/login" style={{
+            fontFamily: 'Syne, sans-serif',
+            fontSize: '0.75rem',
+            color: 'var(--text-muted)',
+            padding: '0.375rem 0.75rem',
+            borderRadius: '0.375rem',
+            transition: 'color 0.15s',
+            textDecoration: 'none',
+          }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--text)'}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'}>
+            Entrar
           </Link>
-          <Link href="/register"
-            className="px-4 py-1.5 rounded-md text-xs font-semibold transition-all"
-            style={{ background: 'var(--accent)', color: '#000' }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'var(--accent)'}>
-            Registrarse
+          <Link href="/register" style={{
+            fontFamily: 'Syne, sans-serif',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            color: '#000',
+            background: 'var(--accent)',
+            padding: '0.375rem 1rem',
+            borderRadius: '0.375rem',
+            transition: 'background 0.15s',
+            textDecoration: 'none',
+          }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'var(--accent)'}>
+            Crear cuenta
           </Link>
         </div>
       </nav>
 
       {/* Hero */}
-      <main className="pt-14">
-        <section className="max-w-4xl mx-auto px-6 pt-24 pb-20 text-center">
-          <span className="mono text-xs tracking-widest uppercase animate-fade-up inline-flex items-center gap-2"
-            style={{ color: 'var(--accent)' }}>
-            <Zap size={12} /> Gestión de tareas para equipos
-          </span>
+      <main style={{
+        maxWidth: '640px',
+        margin: '0 auto',
+        padding: '10rem 2rem 6rem',
+      }}>
 
-          <h1 className="font-display text-5xl md:text-7xl leading-[1.05] mt-6 animate-fade-up stagger-1"
-            style={{ color: 'var(--text)' }}>
-            Organiza el trabajo<br />de tu equipo
-            <span style={{ color: 'var(--accent)' }}>.</span>
+        {/* Eyebrow */}
+        <p style={{
+          fontFamily: 'DM Mono, monospace',
+          fontSize: '0.65rem',
+          letterSpacing: '0.2em',
+          textTransform: 'uppercase',
+          color: 'var(--accent)',
+          marginBottom: '2rem',
+        }}>
+          Gestión de proyectos en equipo
+        </p>
+
+        {/* Headline — el elemento firma */}
+        <div style={{ position: 'relative', marginBottom: '2.5rem' }}>
+          {/* Línea lime vertical que atraviesa el texto */}
+          <div style={{
+            position: 'absolute',
+            left: '-1.5rem',
+            top: 0,
+            bottom: 0,
+            width: '2px',
+            background: 'linear-gradient(180deg, var(--accent) 0%, transparent 100%)',
+          }}/>
+
+          <h1 style={{
+            fontFamily: 'Syne, sans-serif',
+            fontWeight: 800,
+            fontSize: 'clamp(3rem, 8vw, 5.5rem)',
+            lineHeight: 0.95,
+            letterSpacing: '-0.03em',
+            color: 'var(--text)',
+            marginBottom: '0.75rem',
+          }}>
+            Organiza.<br/>
+            <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontFamily: 'Fenix, serif', fontSize: '0.75em', letterSpacing: '-0.01em' }}>
+              Sin ruido.
+            </span>
           </h1>
+        </div>
 
-          <p className="text-base md:text-lg mt-6 max-w-xl mx-auto animate-fade-up stagger-2"
-            style={{ color: 'var(--text-muted)' }}>
-            TaskFlow reúne proyectos, equipos y tareas en un único lugar.
-            Colabora, asigna y avanza sin perder de vista nada.
-          </p>
+        <p style={{
+          fontFamily: 'Fenix, serif',
+          fontSize: '1.125rem',
+          lineHeight: 1.65,
+          color: 'var(--text-muted)',
+          maxWidth: '480px',
+          marginBottom: '3rem',
+        }}>
+          Strata pone cada proyecto, tarea y persona en su lugar.
+          Sin tableros infinitos, sin configuración interminable.
+        </p>
 
-          <div className="flex items-center justify-center gap-3 mt-9 animate-fade-up stagger-3">
-            <Link href="/register"
-              className="flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold transition-all"
-              style={{ background: 'var(--accent)', color: '#000' }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'
-                ;(e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.background = 'var(--accent)'
-                ;(e.currentTarget as HTMLElement).style.transform = 'translateY(0)'
+        {/* CTAs */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '5rem' }}>
+          <Link href="/register" style={{
+            fontFamily: 'Syne, sans-serif',
+            fontWeight: 600,
+            fontSize: '0.875rem',
+            color: '#000',
+            background: 'var(--accent)',
+            padding: '0.75rem 1.75rem',
+            borderRadius: '0.5rem',
+            textDecoration: 'none',
+            transition: 'background 0.15s, transform 0.15s',
+            display: 'inline-block',
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'
+            ;(e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLElement).style.background = 'var(--accent)'
+            ;(e.currentTarget as HTMLElement).style.transform = 'translateY(0)'
+          }}>
+            Empezar — es gratis
+          </Link>
+          <Link href="/login" style={{
+            fontFamily: 'Syne, sans-serif',
+            fontSize: '0.875rem',
+            color: 'var(--text-muted)',
+            textDecoration: 'none',
+            transition: 'color 0.15s',
+          }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--text)'}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'}>
+            Ya tengo cuenta →
+          </Link>
+        </div>
+
+        {/* Índice — en lugar de cards */}
+        <div style={{
+          borderTop: '1px solid var(--border)',
+          paddingTop: '3rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0',
+        }}>
+          {[
+            ['Proyectos y tareas', 'Crea proyectos, divide el trabajo en tareas y sigue su estado en tiempo real.'],
+            ['Equipos con roles', 'Invita por link. Cada miembro tiene un rol: Admin, Editor o Viewer.'],
+            ['IA contextual', 'Un asistente que conoce tu proyecto y te guía en cada tarea. Sin costo adicional.'],
+          ].map(([title, desc], i) => (
+            <div key={title} style={{
+              display: 'grid',
+              gridTemplateColumns: '2rem 1fr',
+              gap: '0 1.25rem',
+              padding: '1.5rem 0',
+              borderBottom: '1px solid var(--border)',
+              alignItems: 'start',
+            }}>
+              <span style={{
+                fontFamily: 'DM Mono, monospace',
+                fontSize: '0.65rem',
+                color: 'var(--accent)',
+                paddingTop: '0.2rem',
               }}>
-              Comenzar gratis <ArrowRight size={15} />
-            </Link>
-            <Link href="/login"
-              className="px-6 py-3 rounded-lg text-sm font-medium transition-all"
-              style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'
-                ;(e.currentTarget as HTMLElement).style.color = 'var(--accent)'
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
-                ;(e.currentTarget as HTMLElement).style.color = 'var(--text)'
-              }}>
-              Ya tengo cuenta
-            </Link>
-          </div>
-        </section>
-
-        {/* Features */}
-        <section className="max-w-5xl mx-auto px-6 pb-28">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {features.map((f, i) => (
-              <div key={f.title}
-                className={`glass rounded-xl p-6 animate-fade-up stagger-${Math.min(i + 1, 5)} transition-all duration-200`}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'
-                  ;(e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
-                  ;(e.currentTarget as HTMLElement).style.transform = 'translateY(0)'
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <div>
+                <p style={{
+                  fontFamily: 'Syne, sans-serif',
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  color: 'var(--text)',
+                  marginBottom: '0.375rem',
                 }}>
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-4"
-                  style={{ background: 'var(--accent-dim)' }}>
-                  <f.icon size={16} style={{ color: 'var(--accent)' }} />
-                </div>
-                <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--text)' }}>
-                  {f.title}
-                </h3>
-                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                  {f.desc}
+                  {title}
+                </p>
+                <p style={{
+                  fontFamily: 'Fenix, serif',
+                  fontSize: '0.9rem',
+                  lineHeight: 1.6,
+                  color: 'var(--text-muted)',
+                }}>
+                  {desc}
                 </p>
               </div>
-            ))}
-          </div>
-        </section>
+            </div>
+          ))}
+        </div>
       </main>
 
       {/* Footer */}
-      <footer className="px-6 py-8" style={{ borderTop: '1px solid var(--border)' }}>
-        <div className="max-w-5xl mx-auto flex items-center justify-between flex-wrap gap-3">
-          <span className="font-display text-sm" style={{ color: 'var(--text-muted)' }}>Taskflow.</span>
-          <span className="mono text-xs" style={{ color: 'var(--text-dim)' }}>
-            Hecho para equipos pequeños
-          </span>
-        </div>
+      <footer style={{
+        maxWidth: '640px',
+        margin: '0 auto',
+        padding: '2rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderTop: '1px solid var(--border)',
+      }}>
+        <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-dim)' }}>
+          Strata.
+        </span>
+        <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.65rem', color: 'var(--text-dim)', letterSpacing: '0.1em' }}>
+          HECHO PARA EQUIPOS PEQUEÑOS
+        </span>
       </footer>
 
-      {/* IA global también en la landing */}
       <GlobalAI />
     </div>
   )

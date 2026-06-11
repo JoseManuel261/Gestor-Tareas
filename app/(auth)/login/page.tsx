@@ -44,7 +44,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg)' }}>
       <div className="w-full max-w-sm animate-fade-up">
         <div className="mb-10">
-          <span className="mono text-xs tracking-widest uppercase" style={{ color: 'var(--accent)' }}>TaskFlow</span>
+          <span className="mono text-xs tracking-widest uppercase" style={{ color: 'var(--accent)' }}>Strata</span>
           <h1 className="text-3xl font-bold mt-2" style={{ color: 'var(--text)' }}>Bienvenido de nuevo</h1>
           <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>Inicia sesión para continuar</p>
         </div>
