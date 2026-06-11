@@ -39,7 +39,7 @@ export default function NotificationBell() {
       setItems((data as Notification[]) || [])
 
       // Creamos el canal
-      const newChannel = supabase.channel('notifications-feed')
+      const newChannel = supabase.channel(`notifications-feed-${user.id}-${Date.now()}`)
 
       // Configuramos el listener ANTES de suscribirnos
       newChannel.on(
