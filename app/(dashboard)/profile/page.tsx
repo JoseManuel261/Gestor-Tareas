@@ -68,8 +68,12 @@ export default function ProfilePage() {
       return
     }
 
-    const { data } = supabase.storage.from('avatars').getPublicUrl(path)
-    setForm(p => ({ ...p, avatar_url: data.publicUrl + '?t=' + Date.now() }))
+const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+    const newUrl = data.publicUrl + '?t=' + Date.now()
+    setForm(p => ({ ...p, avatar_url: newUrl }))
+
+    await supabase.from('profiles').update({ avatar_url: newUrl }).eq('id', userId)
+
     setUploadingAvatar(false)
   }
 
