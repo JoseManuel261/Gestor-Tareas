@@ -344,7 +344,7 @@ export default function ProjectDetailPage() {
               </FormField>
               <FormField label="Fecha límite">
                 <input type="date" value={form.due_date} onChange={e => setForm(p => ({ ...p, due_date: e.target.value }))}
-                  className={inputCls} style={{ ...inputStyle, colorScheme: 'dark' }}
+                  className={inputCls} style={inputStyle}
                   onFocus={focusAccent} onBlur={blurBorder}/>
               </FormField>
             </div>

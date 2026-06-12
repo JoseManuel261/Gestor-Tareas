@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { FolderKanban, Users, CheckSquare, Clock, ArrowRight } from 'lucide-react'
-import { statusColor, statusLabel, priorityColor, priorityLabel } from '@/lib/utils'
+import { FolderKanban, Users, CheckSquare, Clock, ArrowRight, AlertTriangle } from 'lucide-react'
+import { statusColor, statusLabel, priorityColor, priorityLabel, formatDueDate, dueDateColor } from '@/lib/utils'
 
 export default function DashboardPage() {
   const [data, setData] = useState<any>(null)
@@ -24,7 +24,8 @@ export default function DashboardPage() {
         { data: groups, count: groupCount },
         { data: myTasks },
         { data: recentProjects },
-        { count: completedCount }
+        { count: completedCount },
+        { count: overdueCount }
       ] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', uid).single(),
         supabase.from('projects').select('*', { count: 'exact' }).eq('owner_id', uid),
@@ -32,7 +33,9 @@ export default function DashboardPage() {
         supabase.from('tasks').select('*, project:projects(id, name)').eq('assigned_to', uid).neq('status', 'COMPLETED').limit(5),
         supabase.from('projects').select('*').eq('owner_id', uid).order('created_at', { ascending: false }).limit(3),
         supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('assigned_to', uid).eq('status', 'COMPLETED'),
+        supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('assigned_to', uid).neq('status', 'COMPLETED').lt('due_date', new Date().toISOString()).not('due_date', 'is', null),
       ])
+
 
       setData({ profile, projectCount, groupCount, myTasks, recentProjects, completedCount })
       setLoading(false)
@@ -70,6 +73,11 @@ export default function DashboardPage() {
 
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches'
+  const subtitle = overdueCount > 0
+    ? `Tienes ${overdueCount} tarea${overdueCount > 1 ? 's' : ''} vencida${overdueCount > 1 ? 's' : ''}. Revísalas pronto.`
+    : myTasks?.length > 0
+      ? `Tienes ${myTasks.length} tarea${myTasks.length > 1 ? 's' : ''} pendiente${myTasks.length > 1 ? 's' : ''}. ¡Sigue adelante!`
+      : 'Todo al día. Sin tareas pendientes.'
 
   return (
     <div className="space-y-10 animate-fade-up">
@@ -84,8 +92,9 @@ export default function DashboardPage() {
           {profile?.full_name || profile?.username || 'Usuario'}
           <span style={{ color: 'var(--accent)' }}>.</span>
         </h1>
-        <p className="text-sm md:text-base mt-4 max-w-xl" style={{ color: 'var(--text-muted)' }}>
-          Gestiona tus proyectos, equipos y tareas desde un único lugar.
+        <p className="text-sm md:text-base mt-4 max-w-xl" style={{ color: overdueCount > 0 ? 'var(--red)' : 'var(--text-muted)' }}>
+          {overdueCount > 0 && <AlertTriangle size={14} style={{ display: 'inline', marginRight: 6 }} />}
+          {subtitle}
         </p>
       </div>
 
@@ -157,13 +166,18 @@ export default function DashboardPage() {
                       {task.project?.name}
                     </p>
                   </div>
-                  <div className="flex gap-1.5 shrink-0">
+                  <div className="flex gap-1.5 shrink-0 flex-wrap justify-end">
                     <span className={`mono text-xs px-2 py-0.5 rounded ${priorityColor[task.priority]}`}>
                       {priorityLabel[task.priority]}
                     </span>
-                    <span className={`mono text-xs px-2 py-0.5 rounded ${statusColor[task.status]}`}>
-                      {statusLabel[task.status]}
-                    </span>
+                    {task.due_date && (() => {
+                      const due = formatDueDate(task.due_date)
+                      return due ? (
+                        <span className={`mono text-xs px-2 py-0.5 rounded ${dueDateColor[due.status]}`}>
+                          {due.status === 'overdue' ? `Vencida` : due.label}
+                        </span>
+                      ) : null
+                    })()}
                   </div>
                 </Link>
               ))}

@@ -24,7 +24,7 @@ export default function ProjectsPage() {
     if (!user) return
     const { data } = await supabase
       .from('projects')
-      .select('*')
+      .select('*, tasks(status)')
       .eq('owner_id', user.id)
       .order('created_at', { ascending: false })
     setProjects(data || [])
@@ -154,6 +154,27 @@ export default function ProjectsPage() {
                   <p className="text-xs line-clamp-2" style={{ color: 'var(--text-muted)' }}>{project.description}</p>
                 )}
               </div>
+              {/* Progress bar */}
+              {(() => {
+                const tasks = (project as any).tasks || []
+                const total = tasks.length
+                const done = tasks.filter((t: any) => t.status === 'COMPLETED').length
+                const pct = total > 0 ? Math.round((done / total) * 100) : null
+                return total > 0 ? (
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="mono text-xs" style={{ color: 'var(--text-dim)' }}>{done}/{total} tareas</span>
+                      <span className="mono text-xs" style={{ color: pct === 100 ? 'var(--accent)' : 'var(--text-dim)' }}>{pct}%</span>
+                    </div>
+                    <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: 'var(--border2)' }}>
+                      <div className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${pct}%`, background: pct === 100 ? 'var(--accent)' : 'var(--blue)' }}/>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mono text-xs mt-3" style={{ color: 'var(--text-dim)' }}>Sin tareas</p>
+                )
+              })()}
               <div className="flex items-center justify-between mt-4">
                 <span className="mono text-xs" style={{ color: 'var(--text-dim)' }}>
                   {formatDate(project.created_at)}
