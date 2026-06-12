@@ -150,15 +150,15 @@ export default function GroupDetailPage() {
   if (!group) return (
     <div className="space-y-6 animate-fade-up">
       <div className="flex items-center gap-4">
-        <div className="w-9 h-9 rounded-lg animate-pulse" style={{ background: 'var(--surface2)' }}/>
+        <div className="w-9 h-9 rounded-lg animate-pulse" style={{ background: 'var(--surface2)' }} />
         <div className="space-y-2">
-          <div className="h-3 w-16 rounded animate-pulse" style={{ background: 'var(--surface2)' }}/>
-          <div className="h-7 w-48 rounded animate-pulse" style={{ background: 'var(--surface2)' }}/>
+          <div className="h-3 w-16 rounded animate-pulse" style={{ background: 'var(--surface2)' }} />
+          <div className="h-7 w-48 rounded animate-pulse" style={{ background: 'var(--surface2)' }} />
         </div>
       </div>
       <div className="grid md:grid-cols-2 gap-6">
-        <div className="h-64 rounded-xl animate-pulse" style={{ background: 'var(--surface)' }}/>
-        <div className="h-64 rounded-xl animate-pulse" style={{ background: 'var(--surface)' }}/>
+        <div className="h-64 rounded-xl animate-pulse" style={{ background: 'var(--surface)' }} />
+        <div className="h-64 rounded-xl animate-pulse" style={{ background: 'var(--surface)' }} />
       </div>
     </div>
   )
@@ -188,11 +188,11 @@ export default function GroupDetailPage() {
             style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}
             onMouseEnter={e => {
               (e.currentTarget as HTMLElement).style.color = 'var(--red)'
-              ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,68,68,0.3)'
+                ; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,68,68,0.3)'
             }}
             onMouseLeave={e => {
               (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'
-              ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
+                ; (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
             }}>
             <LogOut size={12} /> Salir del grupo
           </button>
@@ -228,11 +228,11 @@ export default function GroupDetailPage() {
                     {member.profile?.avatar_url ? (
                       <img src={member.profile.avatar_url} alt={member.profile.username}
                         className="w-7 h-7 rounded-full object-cover"
-                        style={{ border: '1px solid var(--border2)' }}/>
+                        style={{ border: '1px solid var(--border2)' }} />
                     ) : (
                       <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
                         style={{ background: 'var(--accent-dim)', color: 'var(--accent)', fontSize: '0.55rem' }}>
-                        {(member.profile?.username || 'U').slice(0,2).toUpperCase()}
+                        {(member.profile?.username || 'U').slice(0, 2).toUpperCase()}
                       </div>
                     )}
                     {member.role !== 'member' && (
@@ -317,7 +317,7 @@ export default function GroupDetailPage() {
                         <div className="mt-1">
                           <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: 'var(--border2)' }}>
                             <div className="h-full rounded-full transition-all"
-                              style={{ width: `${pct}%`, background: pct === 100 ? 'var(--accent)' : 'var(--blue)' }}/>
+                              style={{ width: `${pct}%`, background: pct === 100 ? 'var(--accent)' : 'var(--blue)' }} />
                           </div>
                           <p className="mono text-xs mt-0.5" style={{ color: 'var(--text-dim)' }}>{done}/{total} · {pct}%</p>
                         </div>
@@ -335,26 +335,34 @@ export default function GroupDetailPage() {
       </div>
 
       {confirmState && (
-        <ConfirmModal
-          message={confirmState.message}
-          confirmLabel="Confirmar"
-          onConfirm={confirmState.action}
-          onCancel={() => setConfirmState(null)}
-        />
-          <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>{showConfirm.message}</p>
+        <Modal title="Confirmar acción" onClose={() => setConfirmState(null)}>
+          <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
+            {confirmState.message}
+          </p>
+
           <div className="flex gap-3">
-            <button onClick={() => setShowConfirm(null)}
+            {/* Botón Cancelar */}
+            <button
+              onClick={() => setConfirmState(null)}
               className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-all"
               style={{ background: 'var(--surface2)', color: 'var(--text)', border: '1px solid var(--border)' }}
               onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--border2)'}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'}>
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'}
+            >
               Cancelar
             </button>
-            <button onClick={showConfirm.action}
+
+            {/* Botón Confirmar */}
+            <button
+              onClick={() => {
+                confirmState.action();
+                setConfirmState(null); // Cerrar después de ejecutar
+              }}
               className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all"
               style={{ background: 'rgba(255,68,68,0.15)', color: 'var(--red)', border: '1px solid rgba(255,68,68,0.3)' }}
               onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,68,68,0.25)'}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,68,68,0.15)'}>
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,68,68,0.15)'}
+            >
               Confirmar
             </button>
           </div>
