@@ -8,6 +8,7 @@ import { Plus, Trash2, ArrowLeft, User, MessageSquare, Send, Calendar } from 'lu
 import Modal from '@/components/Modal'
 import { FormField, inputCls, inputStyle, focusAccent, blurBorder } from '@/components/FormField'
 import AIAssistant from '@/components/AIAssistant'
+import ConfirmModal from '@/components/ConfirmModal'
 
 const STATUSES = ['PENDING', 'IN_PROGRESS', 'COMPLETED'] as const
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'] as const
@@ -30,6 +31,7 @@ export default function ProjectDetailPage() {
   const [comments, setComments] = useState<Comment[]>([])
   const [commentBody, setCommentBody] = useState('')
   const [postingComment, setPostingComment] = useState(false)
+  const [confirmDeleteTask, setConfirmDeleteTask] = useState<string | null>(null)
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -132,8 +134,8 @@ export default function ProjectDetailPage() {
   }
 
   async function deleteTask(taskId: string) {
-    if (!confirm('¿Eliminar esta tarea?')) return
     await supabase.from('tasks').delete().eq('id', taskId)
+    setConfirmDeleteTask(null)
     load()
   }
 
@@ -296,7 +298,7 @@ export default function ProjectDetailPage() {
                     style={{ background: 'transparent', border: '1px solid currentColor', cursor: 'pointer' }}>
                     {STATUSES.map(s => <option key={s} value={s} style={{ background: 'var(--surface)', color: 'var(--text)' }}>{statusLabel[s]}</option>)}
                   </select>
-                  <button onClick={() => deleteTask(task.id)}
+                  <button onClick={() => setConfirmDeleteTask(task.id)}
                     className="p-1.5 rounded transition-all"
                     style={{ color: 'var(--text-dim)' }}
                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--red)'}
@@ -308,6 +310,15 @@ export default function ProjectDetailPage() {
             )
           })}
         </div>
+      )}
+
+      {confirmDeleteTask && (
+        <ConfirmModal
+          message="¿Eliminar esta tarea? Esta acción no se puede deshacer."
+          confirmLabel="Eliminar tarea"
+          onConfirm={() => deleteTask(confirmDeleteTask)}
+          onCancel={() => setConfirmDeleteTask(null)}
+        />
       )}
 
       {showModal && (

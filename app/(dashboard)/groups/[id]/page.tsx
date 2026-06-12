@@ -3,11 +3,10 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { Group, GroupMember, Project } from '@/lib/types'
-import { Plus, ArrowLeft, UserPlus, Trash2, Crown, Shield, User, FolderKanban, ArrowRight, Link2, Copy, Check } from 'lucide-react'
+import { Plus, ArrowLeft, UserPlus, Trash2, Crown, Shield, User, FolderKanban, ArrowRight, Link2, Copy, Check, LogOut } from 'lucide-react'
 import Modal from '@/components/Modal'
 import { FormField, inputCls, inputStyle, focusAccent, blurBorder } from '@/components/FormField'
 import Link from 'next/link'
-import { priorityLabel } from '@/lib/utils'
 
 export default function GroupDetailPage() {
   const { id } = useParams()
@@ -20,6 +19,7 @@ export default function GroupDetailPage() {
   const [isOwner, setIsOwner] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showProjectModal, setShowProjectModal] = useState(false)
+  const [showConfirm, setShowConfirm] = useState<{ action: () => void; message: string } | null>(null)
   const [projectForm, setProjectForm] = useState({ name: '', description: '' })
   const [saving, setSaving] = useState(false)
   const [inviteLink, setInviteLink] = useState('')
@@ -28,21 +28,12 @@ export default function GroupDetailPage() {
   const [copied, setCopied] = useState(false)
 
   async function load() {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) setCurrentUser(user.id)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) setCurrentUser(user.id)
 
-      const { data: g, error: groupError } = await supabase.from('groups').select('*').eq('id', id).single()
-      if (groupError) {
-        console.error('❌ Error loading group:', groupError)
-      } else {
-        console.log('✅ Group loaded:', g?.name)
-      }
-      setGroup(g)
-      if (g && user) setIsOwner(g.owner_id === user.id)
-    } catch (err) {
-      console.error('❌ Error in load:', err)
-    }
+    const { data: g } = await supabase.from('groups').select('*').eq('id', id).single()
+    setGroup(g)
+    if (g && user) setIsOwner(g.owner_id === user.id)
 
     const { data: m } = await supabase
       .from('group_members')
@@ -67,7 +58,6 @@ export default function GroupDetailPage() {
     setCopied(false)
     setLinkLoading(true)
 
-    // Reutiliza un enlace activo del grupo si ya existe; si no, crea uno.
     const { data: existing } = await supabase
       .from('invitations')
       .select('token')
@@ -86,7 +76,6 @@ export default function GroupDetailPage() {
         .select('token')
         .single()
       if (error) {
-        console.error('❌ Error generando enlace:', error)
         setLinkError('No se pudo generar el enlace.')
         setLinkLoading(false)
         return
@@ -108,18 +97,31 @@ export default function GroupDetailPage() {
     }
   }
 
-  async function removeMember(memberId: string) {
-    if (!confirm('¿Eliminar este miembro del grupo?')) return
-    await supabase.from('group_members').delete().eq('id', memberId)
-    load()
+  function confirm(message: string, action: () => void) {
+    setShowConfirm({ message, action })
+  }
+
+  async function removeMember(memberId: string, username: string) {
+    confirm(`¿Eliminar a @${username} del grupo?`, async () => {
+      await supabase.from('group_members').delete().eq('id', memberId)
+      setShowConfirm(null)
+      load()
+    })
+  }
+
+  async function leaveGroup() {
+    confirm('¿Salir de este grupo? No podrás volver a menos que te inviten de nuevo.', async () => {
+      const myMembership = members.find(m => m.user_id === currentUser)
+      if (myMembership) {
+        await supabase.from('group_members').delete().eq('id', myMembership.id)
+      }
+      setShowConfirm(null)
+      router.replace('/groups')
+    })
   }
 
   async function changeRole(memberId: string, role: string) {
-    const { error } = await supabase.from('group_members').update({ role }).eq('id', memberId)
-    if (error) {
-      console.error('❌ Error cambiando rol:', error)
-      return
-    }
+    await supabase.from('group_members').update({ role }).eq('id', memberId)
     load()
   }
 
@@ -128,23 +130,16 @@ export default function GroupDetailPage() {
     setSaving(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        console.error('No authenticated user')
-        setSaving(false)
-        return
-      }
-      const { error } = await supabase.from('projects').insert({ 
+      if (!user) return
+      await supabase.from('projects').insert({
         name: projectForm.name.trim(),
-        description: projectForm.description.trim() || null, 
-        owner_id: user.id, 
-        group_id: id 
+        description: projectForm.description.trim() || null,
+        owner_id: user.id,
+        group_id: id
       })
-      if (error) throw error
       setProjectForm({ name: '', description: '' })
       setShowProjectModal(false)
       load()
-    } catch (err) {
-      console.error('Error creating group project:', err)
     } finally {
       setSaving(false)
     }
@@ -152,128 +147,148 @@ export default function GroupDetailPage() {
 
   if (!group) return (
     <div className="flex items-center justify-center h-64">
-      <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{borderColor: 'var(--accent)', borderTopColor: 'transparent'}} />
+      <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
     </div>
   )
 
-  // owner o admin: puede invitar, gestionar proyectos y expulsar members
   const isAdmin = isOwner || members.some(m => m.user_id === currentUser && m.role === 'admin')
+  const isMember = !isOwner && members.some(m => m.user_id === currentUser)
 
   return (
     <div className="space-y-6 animate-fade-up">
       <div className="flex items-center gap-4">
         <button onClick={() => router.back()}
           className="p-2 rounded-lg transition-all"
-          style={{color: 'var(--text-muted)', border: '1px solid var(--border)'}}
+          style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}
           onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'}
           onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'}>
           <ArrowLeft size={16} />
         </button>
-        <div>
-          <p className="mono text-xs tracking-widest uppercase" style={{color: 'var(--text-muted)'}}>Grupo</p>
-          <h1 className="text-2xl font-bold" style={{color: 'var(--text)'}}>{group.name}</h1>
-          {group.description && <p className="text-sm" style={{color: 'var(--text-muted)'}}>{group.description}</p>}
+        <div className="flex-1">
+          <p className="mono text-xs tracking-widest uppercase" style={{ color: 'var(--text-muted)' }}>Grupo</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>{group.name}</h1>
+          {group.description && <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{group.description}</p>}
         </div>
+        {/* Botón salir del grupo — solo para miembros no dueños */}
+        {isMember && (
+          <button onClick={leaveGroup}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all"
+            style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLElement).style.color = 'var(--red)'
+              ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,68,68,0.3)'
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'
+              ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
+            }}>
+            <LogOut size={12} /> Salir del grupo
+          </button>
+        )}
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Members */}
-        <div className="rounded-xl p-5" style={{background: 'var(--surface)', border: '1px solid var(--border)'}}>
+        <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-sm" style={{color: 'var(--text)'}}>
-              Miembros <span className="mono text-xs ml-1" style={{color: 'var(--text-dim)'}}>{members.length}</span>
+            <h2 className="font-semibold text-sm" style={{ color: 'var(--text)' }}>
+              Miembros <span className="mono text-xs ml-1" style={{ color: 'var(--text-dim)' }}>{members.length}</span>
             </h2>
             {isAdmin && (
               <button onClick={openInviteModal}
                 className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all"
-                style={{color: 'var(--accent)', border: '1px solid var(--accent)', background: 'var(--accent-dim)'}}>
+                style={{ color: 'var(--accent)', border: '1px solid var(--accent)', background: 'var(--accent-dim)' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(200,240,74,0.15)'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'var(--accent-dim)'}>
                 <UserPlus size={12} /> Invitar
               </button>
             )}
           </div>
           <div className="space-y-2">
             {members.map(member => {
-              const canRemove =
-                member.user_id !== currentUser &&
-                member.role !== 'owner' &&
+              const canRemove = member.user_id !== currentUser && member.role !== 'owner' &&
                 (isOwner || (isAdmin && member.role === 'member'))
-              const canChangeRole =
-                isOwner && member.role !== 'owner' && member.user_id !== currentUser
+              const canChangeRole = isOwner && member.role !== 'owner' && member.user_id !== currentUser
               return (
-              <div key={member.id} className="flex items-center gap-3 p-3 rounded-lg"
-                style={{background: 'var(--surface2)', border: '1px solid var(--border)'}}>
-                <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
-                  style={{background: member.role === 'member' ? 'var(--border)' : 'var(--accent-dim)'}}>
-                  {member.role === 'owner'
-                    ? <Crown size={12} style={{color: 'var(--accent)'}} />
-                    : member.role === 'admin'
-                      ? <Shield size={12} style={{color: 'var(--accent)'}} />
-                      : <User size={12} style={{color: 'var(--text-muted)'}} />
-                  }
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate" style={{color: 'var(--text)'}}>
-                    {member.profile?.username}
-                  </p>
-                  {canChangeRole ? (
-                    <select value={member.role}
-                      onChange={e => changeRole(member.id, e.target.value)}
-                      className="mono text-xs outline-none cursor-pointer mt-0.5"
-                      style={{background: 'transparent', color: 'var(--text-dim)', border: 'none'}}>
-                      <option value="member" style={{background: 'var(--surface)', color: 'var(--text)'}}>member</option>
-                      <option value="admin" style={{background: 'var(--surface)', color: 'var(--text)'}}>admin</option>
-                    </select>
-                  ) : (
-                    <p className="mono text-xs" style={{color: 'var(--text-dim)'}}>{member.role}</p>
+                <div key={member.id} className="flex items-center gap-3 p-3 rounded-lg"
+                  style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                    style={{ background: member.role === 'member' ? 'var(--border)' : 'var(--accent-dim)' }}>
+                    {member.role === 'owner'
+                      ? <Crown size={12} style={{ color: 'var(--accent)' }} />
+                      : member.role === 'admin'
+                        ? <Shield size={12} style={{ color: 'var(--accent)' }} />
+                        : <User size={12} style={{ color: 'var(--text-muted)' }} />
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>
+                      {member.profile?.username}
+                    </p>
+                    {canChangeRole ? (
+                      <select value={member.role}
+                        onChange={e => changeRole(member.id, e.target.value)}
+                        className="mono text-xs outline-none cursor-pointer mt-0.5"
+                        style={{ background: 'transparent', color: 'var(--text-dim)', border: 'none' }}>
+                        <option value="member" style={{ background: 'var(--surface)', color: 'var(--text)' }}>member</option>
+                        <option value="admin" style={{ background: 'var(--surface)', color: 'var(--text)' }}>admin</option>
+                      </select>
+                    ) : (
+                      <p className="mono text-xs" style={{ color: 'var(--text-dim)' }}>{member.role}</p>
+                    )}
+                  </div>
+                  {canRemove && (
+                    <button onClick={() => removeMember(member.id, member.profile?.username)}
+                      className="p-1 rounded transition-all"
+                      style={{ color: 'var(--text-dim)' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--red)'}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-dim)'}>
+                      <Trash2 size={12} />
+                    </button>
                   )}
                 </div>
-                {canRemove && (
-                  <button onClick={() => removeMember(member.id)}
-                    className="p-1 rounded transition-all"
-                    style={{color: 'var(--text-dim)'}}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--red)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-dim)'}>
-                    <Trash2 size={12} />
-                  </button>
-                )}
-              </div>
               )
             })}
           </div>
         </div>
 
         {/* Projects */}
-        <div className="rounded-xl p-5" style={{background: 'var(--surface)', border: '1px solid var(--border)'}}>
+        <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-sm" style={{color: 'var(--text)'}}>
-              Proyectos <span className="mono text-xs ml-1" style={{color: 'var(--text-dim)'}}>{projects.length}</span>
+            <h2 className="font-semibold text-sm" style={{ color: 'var(--text)' }}>
+              Proyectos <span className="mono text-xs ml-1" style={{ color: 'var(--text-dim)' }}>{projects.length}</span>
             </h2>
             {isAdmin && (
               <button onClick={() => setShowProjectModal(true)}
                 className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all"
-                style={{color: 'var(--accent)', border: '1px solid var(--accent)', background: 'var(--accent-dim)'}}>
+                style={{ color: 'var(--accent)', border: '1px solid var(--accent)', background: 'var(--accent-dim)' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(200,240,74,0.15)'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'var(--accent-dim)'}>
                 <Plus size={12} /> Proyecto
               </button>
             )}
           </div>
           {!projects.length ? (
-            <p className="text-sm text-center py-6" style={{color: 'var(--text-dim)'}}>Sin proyectos en este grupo</p>
+            <div className="text-center py-8">
+              <FolderKanban size={24} className="mx-auto mb-2" style={{ color: 'var(--text-dim)' }} />
+              <p className="text-sm" style={{ color: 'var(--text-dim)' }}>Sin proyectos en este grupo</p>
+            </div>
           ) : (
             <div className="space-y-2">
               {projects.map(project => (
                 <Link key={project.id} href={`/projects/${project.id}`}
                   className="flex items-center gap-3 p-3 rounded-lg transition-all"
-                  style={{background: 'var(--surface2)', border: '1px solid var(--border)'}}
+                  style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'}>
-                  <FolderKanban size={14} style={{color: 'var(--accent)'}} />
+                  <FolderKanban size={14} style={{ color: 'var(--accent)' }} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate" style={{color: 'var(--text)'}}>{project.name}</p>
-                    <p className="mono text-xs" style={{color: 'var(--text-dim)'}}>
+                    <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>{project.name}</p>
+                    <p className="mono text-xs" style={{ color: 'var(--text-dim)' }}>
                       {(project.tasks as any)?.[0]?.count || 0} tareas
                     </p>
                   </div>
-                  <ArrowRight size={13} style={{color: 'var(--text-dim)'}} />
+                  <ArrowRight size={13} style={{ color: 'var(--text-dim)' }} />
                 </Link>
               ))}
             </div>
@@ -281,13 +296,35 @@ export default function GroupDetailPage() {
         </div>
       </div>
 
+      {/* Modal de confirmación propio */}
+      {showConfirm && (
+        <Modal title="¿Confirmar acción?" onClose={() => setShowConfirm(null)}>
+          <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>{showConfirm.message}</p>
+          <div className="flex gap-3">
+            <button onClick={() => setShowConfirm(null)}
+              className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-all"
+              style={{ background: 'var(--surface2)', color: 'var(--text)', border: '1px solid var(--border)' }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--border2)'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'}>
+              Cancelar
+            </button>
+            <button onClick={showConfirm.action}
+              className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all"
+              style={{ background: 'rgba(255,68,68,0.15)', color: 'var(--red)', border: '1px solid rgba(255,68,68,0.3)' }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,68,68,0.25)'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,68,68,0.15)'}>
+              Confirmar
+            </button>
+          </div>
+        </Modal>
+      )}
+
       {showInviteModal && (
         <Modal title="Invitar al grupo" onClose={() => setShowInviteModal(false)}>
           <div className="space-y-4">
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
               Comparte este enlace. Cualquiera con una cuenta podrá unirse al grupo.
             </p>
-
             {linkLoading ? (
               <div className="flex items-center justify-center py-6">
                 <div className="w-5 h-5 rounded-full border-2 animate-spin"
@@ -327,20 +364,20 @@ export default function GroupDetailPage() {
           <form onSubmit={createGroupProject} className="space-y-4">
             <FormField label="Nombre">
               <input type="text" value={projectForm.name}
-                onChange={e => setProjectForm(p => ({...p, name: e.target.value}))}
+                onChange={e => setProjectForm(p => ({ ...p, name: e.target.value }))}
                 placeholder="Nombre del proyecto" required className={inputCls} style={inputStyle}
-                onFocus={focusAccent} onBlur={blurBorder} />
+                onFocus={focusAccent} onBlur={blurBorder} autoFocus />
             </FormField>
             <FormField label="Descripción (opcional)">
               <textarea value={projectForm.description}
-                onChange={e => setProjectForm(p => ({...p, description: e.target.value}))}
+                onChange={e => setProjectForm(p => ({ ...p, description: e.target.value }))}
                 placeholder="Describe el proyecto..." rows={3}
                 className={inputCls + ' resize-none'} style={inputStyle}
                 onFocus={focusAccent as any} onBlur={blurBorder as any} />
             </FormField>
             <button type="submit" disabled={saving}
               className="w-full py-2.5 rounded-lg font-semibold text-sm"
-              style={{background: saving ? 'var(--border2)' : 'var(--accent)', color: saving ? 'var(--text-muted)' : '#000'}}>
+              style={{ background: saving ? 'var(--border2)' : 'var(--accent)', color: saving ? 'var(--text-muted)' : '#000' }}>
               {saving ? 'Creando...' : 'Crear proyecto'}
             </button>
           </form>
