@@ -34,6 +34,7 @@ export default function ProjectDetailPage() {
   const [commentBody, setCommentBody] = useState('')
   const [postingComment, setPostingComment] = useState(false)
   const [savingStatus, setSavingStatus] = useState<string | null>(null)
+  const [flashTask, setFlashTask] = useState<string | null>(null)
   const [confirmDeleteTask, setConfirmDeleteTask] = useState<string | null>(null)
 
   async function load() {
@@ -135,6 +136,10 @@ export default function ProjectDetailPage() {
     setSavingStatus(taskId)
     await supabase.from('tasks').update({ status, updated_at: new Date().toISOString() }).eq('id', taskId)
     setSavingStatus(null)
+    if (status === 'COMPLETED') {
+      setFlashTask(taskId)
+      setTimeout(() => setFlashTask(null), 600)
+    }
     load()
   }
 
@@ -296,12 +301,12 @@ export default function ProjectDetailPage() {
             const due = formatDueDate(task.due_date)
             return (
               <div key={task.id}
-                className={`p-4 rounded-xl flex items-start gap-4 transition-all animate-fade-up stagger-${Math.min(i+1,5)}`}
                 style={{
                   background: 'var(--surface)',
                   border: '1px solid var(--border)',
                   borderLeft: '3px solid ' + (task.status === 'COMPLETED' ? 'var(--accent)' : task.status === 'IN_PROGRESS' ? 'var(--blue)' : due?.status === 'overdue' ? 'var(--red)' : 'var(--border2)')
-                }}>
+                }}
+                className={`p-4 rounded-xl flex items-start gap-4 transition-all animate-fade-up stagger-${Math.min(i+1,5)} ${flashTask === task.id ? 'task-completed-flash' : ''}`}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <h3

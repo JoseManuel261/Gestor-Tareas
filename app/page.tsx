@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import ThemeToggle from '@/components/ThemeToggle'
 import GlobalAI from '@/components/GlobalAI'
 
 export default function LandingPage() {
@@ -26,6 +27,7 @@ export default function LandingPage() {
           Strata<span style={{ color: 'var(--accent)' }}>.</span>
         </span>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <ThemeToggle />
           <Link href="/login" style={{
             fontFamily: 'Syne, sans-serif',
             fontSize: '0.75rem',

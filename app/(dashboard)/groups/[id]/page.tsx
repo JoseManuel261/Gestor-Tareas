@@ -7,6 +7,7 @@ import { Plus, ArrowLeft, UserPlus, Trash2, Crown, Shield, User, FolderKanban, A
 import Modal from '@/components/Modal'
 import { FormField, inputCls, inputStyle, focusAccent, blurBorder } from '@/components/FormField'
 import Link from 'next/link'
+import ConfirmModal from '@/components/ConfirmModal'
 
 export default function GroupDetailPage() {
   const { id } = useParams()
@@ -26,6 +27,7 @@ export default function GroupDetailPage() {
   const [linkLoading, setLinkLoading] = useState(false)
   const [linkError, setLinkError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [confirmState, setConfirmState] = useState<{ message: string; action: () => void } | null>(null)
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -98,7 +100,7 @@ export default function GroupDetailPage() {
   }
 
   function confirm(message: string, action: () => void) {
-    setShowConfirm({ message, action })
+    setConfirmState({ message, action })
   }
 
   async function removeMember(memberId: string, username: string) {
@@ -222,14 +224,26 @@ export default function GroupDetailPage() {
               return (
                 <div key={member.id} className="flex items-center gap-3 p-3 rounded-lg"
                   style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}>
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
-                    style={{ background: member.role === 'member' ? 'var(--border)' : 'var(--accent-dim)' }}>
-                    {member.role === 'owner'
-                      ? <Crown size={12} style={{ color: 'var(--accent)' }} />
-                      : member.role === 'admin'
-                        ? <Shield size={12} style={{ color: 'var(--accent)' }} />
-                        : <User size={12} style={{ color: 'var(--text-muted)' }} />
-                    }
+                  <div className="relative shrink-0">
+                    {member.profile?.avatar_url ? (
+                      <img src={member.profile.avatar_url} alt={member.profile.username}
+                        className="w-7 h-7 rounded-full object-cover"
+                        style={{ border: '1px solid var(--border2)' }}/>
+                    ) : (
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+                        style={{ background: 'var(--accent-dim)', color: 'var(--accent)', fontSize: '0.55rem' }}>
+                        {(member.profile?.username || 'U').slice(0,2).toUpperCase()}
+                      </div>
+                    )}
+                    {member.role !== 'member' && (
+                      <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
+                        style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
+                        {member.role === 'owner'
+                          ? <Crown size={7} style={{ color: 'var(--accent)' }} />
+                          : <Shield size={7} style={{ color: 'var(--accent)' }} />
+                        }
+                      </span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>
@@ -320,9 +334,13 @@ export default function GroupDetailPage() {
         </div>
       </div>
 
-      {/* Modal de confirmación propio */}
-      {showConfirm && (
-        <Modal title="¿Confirmar acción?" onClose={() => setShowConfirm(null)}>
+      {confirmState && (
+        <ConfirmModal
+          message={confirmState.message}
+          confirmLabel="Confirmar"
+          onConfirm={confirmState.action}
+          onCancel={() => setConfirmState(null)}
+        />
           <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>{showConfirm.message}</p>
           <div className="flex gap-3">
             <button onClick={() => setShowConfirm(null)}
