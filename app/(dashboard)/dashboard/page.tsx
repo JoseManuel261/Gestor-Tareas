@@ -62,7 +62,7 @@ export default function DashboardPage() {
     </div>
   )
 
-  const { profile, projectCount, groupCount, myTasks, recentProjects, completedCount } = data
+  const { profile, projectCount, groupCount, myTasks, recentProjects, completedCount, overdueCount } = data
 
   const stats = [
     { label: 'Proyectos', value: projectCount || 0, icon: FolderKanban, href: '/projects' },
