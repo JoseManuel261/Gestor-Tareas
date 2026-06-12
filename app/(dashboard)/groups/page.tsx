@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 import { Plus, Users, ArrowRight, Trash2, Pencil } from 'lucide-react'
+import ConfirmModal from '@/components/ConfirmModal'
 import Modal from '@/components/Modal'
 import { FormField, inputCls, inputStyle, focusAccent, blurBorder } from '@/components/FormField'
 import { formatDate } from '@/lib/utils'
@@ -14,6 +15,7 @@ export default function GroupsPage() {
   const [editingGroup, setEditingGroup] = useState<any | null>(null)
   const [form, setForm] = useState({ name: '', description: '' })
   const [saving, setSaving] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [userId, setUserId] = useState<string>('')
   const supabase = createClient()
 
@@ -101,8 +103,8 @@ export default function GroupsPage() {
   }
 
   async function deleteGroup(id: string) {
-    if (!confirm('¿Eliminar este grupo y todos sus proyectos?')) return
     await supabase.from('groups').delete().eq('id', id)
+    setConfirmDelete(null)
     load()
   }
 
@@ -175,7 +177,7 @@ export default function GroupsPage() {
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-dim)'}>
                       <Pencil size={12} />
                     </button>
-                    <button onClick={() => deleteGroup(group.id)}
+                    <button onClick={() => setConfirmDelete(group.id)}
                       className="p-1.5 rounded transition-all"
                       style={{ color: 'var(--text-dim)' }}
                       title="Eliminar grupo"
@@ -202,6 +204,15 @@ export default function GroupsPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {confirmDelete && (
+        <ConfirmModal
+          message="¿Eliminar este grupo y todos sus proyectos? Esta acción no se puede deshacer."
+          confirmLabel="Eliminar grupo"
+          onConfirm={() => deleteGroup(confirmDelete)}
+          onCancel={() => setConfirmDelete(null)}
+        />
       )}
 
       {showModal && (
