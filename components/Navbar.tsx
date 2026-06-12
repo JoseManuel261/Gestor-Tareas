@@ -3,7 +3,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { LayoutDashboard, FolderKanban, Users, LogOut, Menu, X } from 'lucide-react'
+import { LayoutDashboard, FolderKanban, Users, LogOut, Menu, X, User } from 'lucide-react'
 import NotificationBell from '@/components/NotificationBell'
 import ThemeToggle from '@/components/ThemeToggle'
 
@@ -13,7 +13,12 @@ const navItems = [
   { href: '/groups', label: 'Grupos', icon: Users },
 ]
 
-export default function Navbar({ username }: { username: string }) {
+interface NavbarProps {
+  username: string
+  avatarUrl?: string | null
+}
+
+export default function Navbar({ username, avatarUrl }: NavbarProps) {
   const router = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
@@ -25,11 +30,24 @@ export default function Navbar({ username }: { username: string }) {
     router.refresh()
   }
 
+  const Avatar = () => (
+    avatarUrl ? (
+      <img src={avatarUrl} alt={username}
+        className="w-6 h-6 rounded-full object-cover"
+        style={{ border: '1.5px solid var(--border2)' }} />
+    ) : (
+      <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+        style={{ background: 'var(--accent-dim)', color: 'var(--accent)', border: '1.5px solid var(--border2)', fontSize: '0.6rem' }}>
+        {username.slice(0, 2).toUpperCase()}
+      </div>
+    )
+  )
+
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-4 md:px-6 justify-between"
         style={{
-          background: 'rgba(10,10,10,0.8)',
+          background: 'rgba(10,10,10,0.85)',
           backdropFilter: 'blur(12px)',
           borderBottom: '1px solid var(--border)'
         }}>
@@ -40,7 +58,7 @@ export default function Navbar({ username }: { username: string }) {
           Strata.
         </Link>
 
-        {/* Nav links — solo desktop */}
+        {/* Nav links — desktop */}
         <div className="hidden md:flex items-center gap-1">
           {navItems.map(item => {
             const active = pathname.startsWith(item.href)
@@ -63,7 +81,7 @@ export default function Navbar({ username }: { username: string }) {
           <ThemeToggle />
           <NotificationBell />
           <Link href="/profile"
-            className="mono text-xs px-2 py-1 rounded-md transition-all"
+            className="flex items-center gap-2 px-2 py-1 rounded-md transition-all"
             style={{
               color: pathname === '/profile' ? 'var(--accent)' : 'var(--text-muted)',
               background: pathname === '/profile' ? 'var(--accent-dim)' : 'transparent',
@@ -74,7 +92,8 @@ export default function Navbar({ username }: { username: string }) {
             onMouseLeave={e => {
               if (pathname !== '/profile') (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'
             }}>
-            @{username}
+            <Avatar />
+            <span className="mono text-xs">@{username}</span>
           </Link>
           <button onClick={logout}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-all"
@@ -92,7 +111,7 @@ export default function Navbar({ username }: { username: string }) {
           </button>
         </div>
 
-        {/* Derecha móvil */}
+        {/* Móvil */}
         <div className="flex md:hidden items-center gap-2">
           <ThemeToggle />
           <NotificationBell />
@@ -104,7 +123,7 @@ export default function Navbar({ username }: { username: string }) {
         </div>
       </nav>
 
-      {/* Menú móvil desplegable */}
+      {/* Menú móvil */}
       {menuOpen && (
         <div className="fixed top-14 left-0 right-0 z-40 md:hidden px-4 py-3 space-y-1"
           style={{
@@ -132,9 +151,10 @@ export default function Navbar({ username }: { username: string }) {
 
           <div className="flex items-center justify-between px-3 py-2">
             <Link href="/profile" onClick={() => setMenuOpen(false)}
-              className="mono text-xs transition-all"
+              className="flex items-center gap-2 transition-all"
               style={{ color: 'var(--text-muted)' }}>
-              @{username}
+              <Avatar />
+              <span className="mono text-xs">@{username}</span>
             </Link>
             <button onClick={logout}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-all"

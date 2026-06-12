@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { Bell, CheckCheck } from 'lucide-react'
+import { Bell, CheckCheck, Trash2 } from 'lucide-react'
 import type { Notification } from '@/lib/types'
 
 function timeAgo(iso: string) {
@@ -24,6 +24,12 @@ export default function NotificationBell() {
 
   const unread = items.filter(i => !i.read).length
 
+  // Update tab title with unread count
+  useEffect(() => {
+    const base = 'Strata'
+    document.title = unread > 0 ? `(${unread}) ${base}` : base
+  }, [unread])
+
   useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | null = null
 
@@ -35,22 +41,16 @@ export default function NotificationBell() {
         .from('notifications')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(20)
+        .limit(30)
       setItems((data as Notification[]) || [])
 
-      // Creamos el canal
       const newChannel = supabase.channel(`notifications-feed-${user.id}-${Date.now()}`)
-
-      // Configuramos el listener ANTES de suscribirnos
       newChannel.on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
-        payload => setItems(prev => [payload.new as Notification, ...prev])
+        payload => setItems(prev => [payload.new as Notification, ...prev].slice(0, 30))
       )
-
-      // Finalmente, nos suscribimos
       newChannel.subscribe()
-
       channel = newChannel
     }
 
@@ -65,11 +65,23 @@ export default function NotificationBell() {
     await supabase.from('notifications').update({ read: true }).in('id', ids)
   }
 
+  async function deleteNotification(e: React.MouseEvent, id: string) {
+    e.stopPropagation()
+    setItems(prev => prev.filter(i => i.id !== id))
+    await supabase.from('notifications').delete().eq('id', id)
+  }
+
+  async function clearAll() {
+    const ids = items.map(i => i.id)
+    setItems([])
+    await supabase.from('notifications').delete().in('id', ids)
+  }
+
   function openItem(n: Notification) {
     setOpen(false)
     if (!n.read) {
       setItems(prev => prev.map(i => (i.id === n.id ? { ...i, read: true } : i)))
-      supabase.from('notifications').update({ read: true }).eq('id', n.id).then(() => { })
+      supabase.from('notifications').update({ read: true }).eq('id', n.id).then(() => {})
     }
     if (n.link) router.push(n.link)
   }
@@ -96,16 +108,29 @@ export default function NotificationBell() {
           <div className="absolute right-0 mt-2 w-80 rounded-xl overflow-hidden z-50 animate-fade-up"
             style={{ background: 'var(--surface)', border: '1px solid var(--border2)', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}>
             <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
-              <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Notificaciones</span>
-              {unread > 0 && (
-                <button onClick={markAllRead}
-                  className="flex items-center gap-1 text-xs transition-all"
-                  style={{ color: 'var(--text-muted)' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--accent)'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'}>
-                  <CheckCheck size={12} /> Marcar leídas
-                </button>
-              )}
+              <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
+                Notificaciones {unread > 0 && <span className="mono text-xs ml-1" style={{ color: 'var(--accent)' }}>({unread})</span>}
+              </span>
+              <div className="flex items-center gap-2">
+                {unread > 0 && (
+                  <button onClick={markAllRead}
+                    className="flex items-center gap-1 text-xs transition-all"
+                    style={{ color: 'var(--text-muted)' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--accent)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'}>
+                    <CheckCheck size={12} /> Leídas
+                  </button>
+                )}
+                {items.length > 0 && (
+                  <button onClick={clearAll}
+                    className="flex items-center gap-1 text-xs transition-all"
+                    style={{ color: 'var(--text-muted)' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--red)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'}>
+                    <Trash2 size={11} /> Limpiar
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="max-h-80 overflow-y-auto">
@@ -115,9 +140,10 @@ export default function NotificationBell() {
                 </p>
               ) : (
                 items.map(n => (
-                  <button key={n.id} onClick={() => openItem(n)}
-                    className="w-full text-left px-4 py-3 flex gap-3 transition-all"
-                    style={{ borderBottom: '1px solid var(--border)', background: n.read ? 'transparent' : 'var(--accent-dim)' }}>
+                  <div key={n.id}
+                    className="group w-full text-left px-4 py-3 flex gap-3 transition-all cursor-pointer relative"
+                    style={{ borderBottom: '1px solid var(--border)', background: n.read ? 'transparent' : 'var(--accent-dim)' }}
+                    onClick={() => openItem(n)}>
                     <span className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
                       style={{ background: n.read ? 'var(--text-dim)' : 'var(--accent)' }} />
                     <div className="flex-1 min-w-0">
@@ -125,7 +151,15 @@ export default function NotificationBell() {
                       {n.body && <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{n.body}</p>}
                       <p className="mono text-xs mt-0.5" style={{ color: 'var(--text-dim)' }}>{timeAgo(n.created_at)}</p>
                     </div>
-                  </button>
+                    <button
+                      onClick={e => deleteNotification(e, n.id)}
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded transition-all shrink-0"
+                      style={{ color: 'var(--text-dim)' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--red)'}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-dim)'}>
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
                 ))
               )}
             </div>

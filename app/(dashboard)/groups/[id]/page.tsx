@@ -43,7 +43,7 @@ export default function GroupDetailPage() {
 
     const { data: p } = await supabase
       .from('projects')
-      .select('*, tasks(count)')
+      .select('*, tasks(status)')
       .eq('group_id', id)
       .order('created_at', { ascending: false })
     setProjects(p || [])
@@ -146,8 +146,18 @@ export default function GroupDetailPage() {
   }
 
   if (!group) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
+    <div className="space-y-6 animate-fade-up">
+      <div className="flex items-center gap-4">
+        <div className="w-9 h-9 rounded-lg animate-pulse" style={{ background: 'var(--surface2)' }}/>
+        <div className="space-y-2">
+          <div className="h-3 w-16 rounded animate-pulse" style={{ background: 'var(--surface2)' }}/>
+          <div className="h-7 w-48 rounded animate-pulse" style={{ background: 'var(--surface2)' }}/>
+        </div>
+      </div>
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="h-64 rounded-xl animate-pulse" style={{ background: 'var(--surface)' }}/>
+        <div className="h-64 rounded-xl animate-pulse" style={{ background: 'var(--surface)' }}/>
+      </div>
     </div>
   )
 
@@ -281,14 +291,28 @@ export default function GroupDetailPage() {
                   style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'}>
-                  <FolderKanban size={14} style={{ color: 'var(--accent)' }} />
+                  <FolderKanban size={14} style={{ color: 'var(--accent)', flexShrink: 0 }} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>{project.name}</p>
-                    <p className="mono text-xs" style={{ color: 'var(--text-dim)' }}>
-                      {(project.tasks as any)?.[0]?.count || 0} tareas
-                    </p>
+                    {(() => {
+                      const tasks = (project as any).tasks || []
+                      const total = tasks.length
+                      const done = tasks.filter((t: any) => t.status === 'COMPLETED').length
+                      const pct = total > 0 ? Math.round((done / total) * 100) : null
+                      return total > 0 ? (
+                        <div className="mt-1">
+                          <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: 'var(--border2)' }}>
+                            <div className="h-full rounded-full transition-all"
+                              style={{ width: `${pct}%`, background: pct === 100 ? 'var(--accent)' : 'var(--blue)' }}/>
+                          </div>
+                          <p className="mono text-xs mt-0.5" style={{ color: 'var(--text-dim)' }}>{done}/{total} · {pct}%</p>
+                        </div>
+                      ) : (
+                        <p className="mono text-xs" style={{ color: 'var(--text-dim)' }}>Sin tareas</p>
+                      )
+                    })()}
                   </div>
-                  <ArrowRight size={13} style={{ color: 'var(--text-dim)' }} />
+                  <ArrowRight size={13} style={{ color: 'var(--text-dim)', flexShrink: 0 }} />
                 </Link>
               ))}
             </div>

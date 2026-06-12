@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { Project, Task, Profile, Comment } from '@/lib/types'
 import { statusColor, statusLabel, priorityColor, priorityLabel, formatDate, formatDueDate, dueDateColor } from '@/lib/utils'
-import { Plus, Trash2, ArrowLeft, User, MessageSquare, Send, Calendar } from 'lucide-react'
+import { Plus, Trash2, ArrowLeft, User, MessageSquare, Send, Calendar, Search, ArrowUpDown } from 'lucide-react'
 import Modal from '@/components/Modal'
 import { FormField, inputCls, inputStyle, focusAccent, blurBorder } from '@/components/FormField'
 import AIAssistant from '@/components/AIAssistant'
@@ -22,6 +22,8 @@ export default function ProjectDetailPage() {
   const [members, setMembers] = useState<Profile[]>([])
   const [filterStatus, setFilterStatus] = useState<string>('')
   const [filterAssignee, setFilterAssignee] = useState<string>('')
+  const [search, setSearch] = useState<string>('')
+  const [sortBy, setSortBy] = useState<'created_at' | 'priority' | 'due_date'>('created_at')
   const [showModal, setShowModal] = useState(false)
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -31,6 +33,7 @@ export default function ProjectDetailPage() {
   const [comments, setComments] = useState<Comment[]>([])
   const [commentBody, setCommentBody] = useState('')
   const [postingComment, setPostingComment] = useState(false)
+  const [savingStatus, setSavingStatus] = useState<string | null>(null)
   const [confirmDeleteTask, setConfirmDeleteTask] = useState<string | null>(null)
 
   async function load() {
@@ -129,7 +132,9 @@ export default function ProjectDetailPage() {
   }
 
   async function updateStatus(taskId: string, status: string) {
+    setSavingStatus(taskId)
     await supabase.from('tasks').update({ status, updated_at: new Date().toISOString() }).eq('id', taskId)
+    setSavingStatus(null)
     load()
   }
 
@@ -140,7 +145,22 @@ export default function ProjectDetailPage() {
   }
 
   const completedTasks = tasks.filter(t => t.status === 'COMPLETED')
-  const hasFilters = filterStatus || filterAssignee
+
+  const PRIORITY_ORDER = { HIGH: 0, MEDIUM: 1, LOW: 2 }
+
+  const filteredTasks = tasks
+    .filter(t => !search || t.title.toLowerCase().includes(search.toLowerCase()) || t.description?.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      if (sortBy === 'priority') return (PRIORITY_ORDER[a.priority] ?? 1) - (PRIORITY_ORDER[b.priority] ?? 1)
+      if (sortBy === 'due_date') {
+        if (!a.due_date && !b.due_date) return 0
+        if (!a.due_date) return 1
+        if (!b.due_date) return -1
+        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+  const hasFilters = filterStatus || filterAssignee || search
 
   if (!project) return (
     <div className="flex items-center justify-center h-64">
@@ -217,6 +237,27 @@ export default function ProjectDetailPage() {
           </div>
         )}
 
+        {/* Search + Sort */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="search-bar flex items-center gap-2 px-3 py-1.5 flex-1 min-w-48">
+            <Search size={12} style={{ color: 'var(--text-dim)', flexShrink: 0 }}/>
+            <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar tareas..."
+              className="bg-transparent outline-none text-xs w-full"
+              style={{ color: 'var(--text)' }}/>
+            {search && (
+              <button onClick={() => setSearch('')} className="text-xs" style={{ color: 'var(--text-dim)' }}>×</button>
+            )}
+          </div>
+          <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}
+            className="mono text-xs px-2.5 py-1.5 rounded-lg outline-none transition-all"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+            <option value="created_at">Más recientes</option>
+            <option value="priority">Por prioridad</option>
+            <option value="due_date">Por fecha límite</option>
+          </select>
+        </div>
+
         <div className="flex items-center justify-between">
           {hasFilters && (
             <button onClick={() => { setFilterStatus(''); setFilterAssignee('') }}
@@ -234,7 +275,7 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Tasks */}
-      {!tasks.length ? (
+      {!filteredTasks.length ? (
         <div className="text-center py-16">
           <p className="text-sm" style={{ color: 'var(--text-dim)' }}>
             {hasFilters ? 'No hay tareas con estos filtros' : 'No hay tareas aún'}
@@ -251,7 +292,7 @@ export default function ProjectDetailPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {tasks.map((task, i) => {
+          {filteredTasks.map((task, i) => {
             const due = formatDueDate(task.due_date)
             return (
               <div key={task.id}
@@ -294,8 +335,9 @@ export default function ProjectDetailPage() {
                 <div className="flex items-center gap-2 shrink-0">
                   <select value={task.status}
                     onChange={e => updateStatus(task.id, e.target.value)}
+                    disabled={savingStatus === task.id}
                     className={`mono text-xs px-2 py-1 rounded-lg outline-none ${statusColor[task.status]}`}
-                    style={{ background: 'transparent', border: '1px solid currentColor', cursor: 'pointer' }}>
+                    style={{ background: 'transparent', border: '1px solid currentColor', cursor: savingStatus === task.id ? 'wait' : 'pointer', opacity: savingStatus === task.id ? 0.6 : 1 }}>
                     {STATUSES.map(s => <option key={s} value={s} style={{ background: 'var(--surface)', color: 'var(--text)' }}>{statusLabel[s]}</option>)}
                   </select>
                   <button onClick={() => setConfirmDeleteTask(task.id)}

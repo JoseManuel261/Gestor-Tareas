@@ -39,9 +39,9 @@ export default function AIAssistant({ project, currentTask, completedTasks }: AI
     }
   }, [open])
 
-  async function sendMessage(e?: React.FormEvent) {
+  async function sendMessage(e?: React.FormEvent, overrideText?: string) {
     e?.preventDefault()
-    const text = input.trim()
+    const text = overrideText ?? input.trim()
     if (!text || loading) return
 
     const userMsg: Message = { role: 'user', content: text }
@@ -160,7 +160,7 @@ export default function AIAssistant({ project, currentTask, completedTasks }: AI
             <div className="px-3 pb-2 flex flex-wrap gap-1.5">
               {quickPrompts.map((p, i) => (
                 <button key={i}
-                  onClick={() => { setInput(p); }}
+                  onClick={() => { setInput(p); sendMessage(undefined, p) }}
                   className="text-xs px-2.5 py-1 rounded-full transition-all"
                   style={{
                     background: 'var(--accent-dim)',
